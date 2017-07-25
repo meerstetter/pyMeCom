@@ -7,7 +7,7 @@ from PyCRC.CRCCCITT import CRCCCITT
 
 import time
 
-from struct import unpack
+from struct import pack, unpack
 
 import pandas as pd
 
@@ -50,7 +50,13 @@ class Meframe:
         frame = self.SOURCE + "{:02X}".format(self.ADDRESS) + "{:04X}".format(self.SEQUENCE)
         # payload can be str or float or int
         for p in self.PAYLOAD:
-            frame += p if type(p) is str else "{:08X}".format(p)
+            if type(p) is str:
+                frame += p
+            elif type(p) is int:
+                frame += "{:08X}".format(p)
+            elif type(p) is float:
+                frame += hex(unpack('<I', pack('<f', p))[0])[2:].upper()  # please do not ask
+            # frame += p if type(p) is str else "{:08X}".format(p)
         # if we only want a partial frame, return here
         if part:
             return frame.encode()
@@ -107,7 +113,7 @@ class Queryresponse(Meframe):
 
     def decompose(self, frame_bytes):
         assert self.RESPONSE_TYPE is not None
-
+        frame_bytes = self.SOURCE.encode() + frame_bytes
         self._decompose_header(frame_bytes)
 
         frame = frame_bytes.decode()
@@ -151,10 +157,16 @@ ser.applySettingsDict(CONNECTION_SETTINGS)
 protocol = ReaderThread(serial_instance=ser, protocol_factory=Mepacket)
 receiver = protocol.__enter__()
 
-p = {"id": 100, "response_type": "INT32"}
+p = {"id": 2010, "response_type": "INT32"}
+#p = {"id": 1010, "response_type": "FLOAT32"}
 
 q = Query(sequence=5547, parameter=p)
 print(q.compose())
+
+protocol.write(q.compose())
+
+while receiver.PACKET_QUEUE.empty():
+    time.sleep(0.1)
 
 packet = receiver.PACKET_QUEUE.get()
 
@@ -169,3 +181,7 @@ if packet[7] == b'+':
 # nope it's a response to a parameter query
 else:
     q.set_response(packet)
+    print(q.RESPONSE.compose())
+    print(q.RESPONSE.PAYLOAD)
+
+protocol.stop()
