@@ -144,8 +144,9 @@ class Errorresponse(Meframe, ResponseException):
 
 
 # setup serial port
-CONNECTION_SETTINGS = {"port": "/dev/ttyUSB0", "baudrate": 57600, "timeout": 10}
-ser = Serial(port="/dev/ttyUSB0").applySettingsDict(CONNECTION_SETTINGS)
+CONNECTION_SETTINGS = {"baudrate": 57600, "timeout": 10}
+ser = Serial(port="/dev/ttyUSB0")
+ser.applySettingsDict(CONNECTION_SETTINGS)
 
 with ReaderThread(serial_instance=ser, protocol_factory=Mepacket) as protocol:
     p = {"id": 100, "response_type": "INT32"}
