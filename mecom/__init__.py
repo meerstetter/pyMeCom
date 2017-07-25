@@ -148,22 +148,24 @@ CONNECTION_SETTINGS = {"baudrate": 57600, "timeout": 10}
 ser = Serial(port="/dev/ttyUSB0")
 ser.applySettingsDict(CONNECTION_SETTINGS)
 
-with ReaderThread(serial_instance=ser, protocol_factory=Mepacket) as protocol:
-    p = {"id": 100, "response_type": "INT32"}
+protocol = ReaderThread(serial_instance=ser, protocol_factory=Mepacket)
+receiver = protocol.__enter__()
 
-    q = Query(sequence=5547, parameter=p)
-    print(q.compose())
+p = {"id": 100, "response_type": "INT32"}
 
-    packet = protocol.__enter__().PACKET_QUEUE.get()
+q = Query(sequence=5547, parameter=p)
+print(q.compose())
 
-    # is it an ACK packet?
-    if len(packet) == 10:
-        q.set_response(packet)
-    # is it an error packet?
-    if packet[7] == b'+':
-        response = Errorresponse()
-        response.decompose(packet)
-        raise response
-    # nope it's a response to a parameter query
-    else:
-        q.set_response(packet)
+packet = receiver.PACKET_QUEUE.get()
+
+# is it an ACK packet?
+if len(packet) == 10:
+    q.set_response(packet)
+# is it an error packet?
+if packet[7] == b'+':
+    response = Errorresponse()
+    response.decompose(packet)
+    raise response
+# nope it's a response to a parameter query
+else:
+    q.set_response(packet)
