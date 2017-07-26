@@ -1,0 +1,11 @@
+PARAMETERS = [
+    {"id": 104, "name": "Device Status", "format": "INT32"},
+    {"id": 2010, "name": "Status", "format": "INT32"},
+    {"id": 1010, "name": "Target Object Temperature", "format": "FLOAT32"}
+]
+
+
+ERRORS = [
+    {"code": 1, "symbol": "EER_CMD_NOT_AVAILABLE", "description": "Command not available"},
+    {"code": 2, "symbol": "EER_DEVICE_BUSY", "description": "Device is busy"}
+]
