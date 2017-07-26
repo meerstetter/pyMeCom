@@ -187,7 +187,7 @@ class DeviceError(MeFrame):
     def error(self):
         error_code = self.PAYLOAD[1]
         # returns [code, description, symbol]
-        return self.ERRORS[self.ERRORS["code"] == error_code].transpose()[0]
+        return self.ERRORS[self.ERRORS["code"] == error_code].to_dict(orient="records")[0]
 
 
 class MeCom:
@@ -222,8 +222,8 @@ class MeCom:
         return self
 
     def _get_parameter(self, parameter_name, parameter_id):
-        return self.PARAMETERS[self.PARAMETERS["name"] == parameter_name].transpose().to_dict()[1] if parameter_name\
-            else self.PARAMETERS[self.PARAMETERS["id"] == parameter_id].transpose().to_dict()[1]
+        return self.PARAMETERS[self.PARAMETERS["name"] == parameter_name].to_dict(orient="records")[0] if parameter_name\
+            else self.PARAMETERS[self.PARAMETERS["id"] == parameter_id].to_dict(orient="records")[0]
 
     def _inc(self):
         self.SEQUENCE_COUNTER += 1
