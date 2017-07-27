@@ -11,6 +11,8 @@ from struct import pack, unpack
 
 import pandas as pd
 
+from functools import partialmethod
+
 from exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout
 
 from commands import PARAMETERS, ERRORS
@@ -28,22 +30,22 @@ class MePacket(FramedPacket):
 
 class MeFrame:
     _TYPES = {"UNIT8": "!H", "UNIT16": "!L", "INT32": "!i", "FLOAT32": "!f"}
-
     _SOURCE = ""
-    ADDRESS = 0
-    SEQUENCE = 0
-    PAYLOAD = []
-    CRC = None
     _EOL = "\r"  # carriage return
 
     def __init__(self):
-        pass
+        self.ADDRESS = 0
+        self.SEQUENCE = 0
+        self.PAYLOAD = []
+        self.CRC = None
 
     def crc(self, in_crc=None):
         if self.CRC is None:
             self.CRC = CRCCCITT().calculate(input_data=self.compose(part=True))
 
         # crc check
+        # print(self.CRC)
+        # print(in_crc)
         if in_crc is not None and in_crc != self.CRC:
             raise WrongChecksum
 
@@ -80,10 +82,17 @@ class MeFrame:
 
 class Query(MeFrame):
     _SOURCE = "#"
-    RESPONSE = None
-    _RESPONSE_FORMAT = None
+    _PAYLOAD_START = None
 
     def __init__(self, parameter, sequence, address=0, parameter_instance=1):
+        super().__init__()
+
+        if hasattr(self, "_PAYLOAD_START"):
+            self.PAYLOAD.append(self._PAYLOAD_START)
+
+        self.RESPONSE = None
+        self._RESPONSE_FORMAT = None
+
         self.ADDRESS = address
         self.SEQUENCE = sequence
 
@@ -99,7 +108,7 @@ class Query(MeFrame):
             self.RESPONSE = ACK()
             self.RESPONSE.decompose(response_frame)
         # is it an error packet?
-        if response_frame[7] == b'+':
+        elif b'+' in response_frame:
             self.RESPONSE = DeviceError()
             self.RESPONSE.decompose(response_frame)
         # nope it's a response to a parameter query
@@ -114,7 +123,7 @@ class Query(MeFrame):
 
 
 class VR(Query):
-    PAYLOAD = ["?VR"]
+    _PAYLOAD_START = "?VR"
 
     def __init__(self, parameter, sequence, address=0, parameter_instance=1):
         # init header (equal for get and set queries
@@ -122,13 +131,12 @@ class VR(Query):
                          sequence=sequence,
                          address=address,
                          parameter_instance=parameter_instance)
-
         # initialize response
         self._RESPONSE_FORMAT = parameter["format"]
 
 
 class VS(Query):
-    PAYLOAD = ["VS"]
+    _PAYLOAD_START = "VS"
 
     def __init__(self, value, parameter, sequence=1, address=0, parameter_instance=1):
         # init header (equal for get and set queries
@@ -148,16 +156,17 @@ class VRResponse(MeFrame):
     _RESPONSE_FORMAT = None
 
     def __init__(self, response_format):
+        super().__init__()
         self._RESPONSE_FORMAT = self._TYPES[response_format]
 
     def decompose(self, frame_bytes):
         assert self._RESPONSE_FORMAT is not None
-        frame_bytes = self.SOURCE.encode() + frame_bytes
+        frame_bytes = self._SOURCE.encode() + frame_bytes
         self._decompose_header(frame_bytes)
 
         frame = frame_bytes.decode()
         self.PAYLOAD = [unpack(self._RESPONSE_FORMAT, bytes.fromhex(frame[7:15]))[0]]  # convert hex to float or int
-        self.crc(int(frame[15:19], 16))  # sets crc or raises
+        self.crc(int(frame[-4:], 16))  # sets crc or raises
 
 
 class ACK(MeFrame):
@@ -167,6 +176,7 @@ class ACK(MeFrame):
         pass
 
     def decompose(self, frame_bytes):
+        frame_bytes = self._SOURCE.encode() + frame_bytes
         self._decompose_header(frame_bytes)
 
         frame = frame_bytes.decode()
@@ -177,17 +187,35 @@ class DeviceError(MeFrame):
     _SOURCE = "!"
     ERRORS = pd.DataFrame(ERRORS)
 
+    def compose(self, part=False):
+        # first part
+        frame = self._SOURCE + "{:02X}".format(self.ADDRESS) + "{:04X}".format(self.SEQUENCE)
+        # payload is ['+', #_of_error]
+        frame += self.PAYLOAD[0]
+        frame += "{:02x}".format(self.PAYLOAD[1])
+        # if we only want a partial frame, return here
+        if part:
+            return frame.encode()
+        # add checksum
+        if self.CRC is None:
+            self.crc()
+        frame += "{:04X}".format(self.CRC)
+        # add end of line (carriage return)
+        frame += self._EOL
+        return frame.encode()
+
     def decompose(self, frame_bytes):
+        frame_bytes = self._SOURCE.encode() + frame_bytes
         self._decompose_header(frame_bytes)
         frame = frame_bytes.decode()
         self.PAYLOAD.append(frame[7])
         self.PAYLOAD.append(int(frame[8:10], 16))
-        self.crc(int(frame[10:14], 16))
+        self.crc(int(frame[-4:], 16))
 
     def error(self):
         error_code = self.PAYLOAD[1]
         # returns [code, description, symbol]
-        return self.ERRORS[self.ERRORS["code"] == error_code].to_dict(orient="records")[0]
+        return self.ERRORS[self.ERRORS["code"] == error_code].to_dict(orient="records")[0].values()
 
 
 class MeCom:
@@ -228,21 +256,24 @@ class MeCom:
     def _inc(self):
         self.SEQUENCE_COUNTER += 1
 
-    def _raise(self, vr):
+    @staticmethod
+    def _raise(query):
         # did we encounter an error?
-        if type(vr.RESPONSE) is DeviceError:
-            code, description, symbol = vr.RESPONSE.error()
-            raise ResponseException("device {} raised {}".format(vr.RESPONSE.ADDRESS, description))
+        if type(query.RESPONSE) is DeviceError:
+            code, description, symbol = query.RESPONSE.error()
+            raise ResponseException("device {} raised {}".format(query.RESPONSE.ADDRESS, description))
 
-    def _execute(self, query, *args, **kwargs):
+    def _execute(self, query):
         # send query
-        self.protocol.write(query.compose(), *args, **kwargs)
+        self.protocol.write(query.compose())
+        # print(query.compose())
 
         # wait for answer
-        self._wait_for_response(*args, **kwargs)
+        self._wait_for_response()
 
         # get answer from queue and attach to query
-        response_frame = self.receiver.PACKET_QUEUE._get(*args, **kwargs)
+        response_frame = self.receiver.PACKET_QUEUE.get()
+        # print(response_frame)
         query.set_response(response_frame)
 
         # did we encounter an error?
@@ -260,13 +291,12 @@ class MeCom:
         parameter = self._get_parameter(parameter_name, parameter_id)
 
         # execute query
-        vr = self._execute(VR(parameter=parameter, sequence=self.SEQUENCE_COUNTER, *args, **kwargs),
-                           *args,
-                           **kwargs)
+        vr = self._execute(VR(parameter=parameter, sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
 
         # increment sequence counter
         self._inc()
-
+        # print(vr.PAYLOAD)
+        # print(vr.RESPONSE.PAYLOAD)
         # return the query with response
         return vr
 
@@ -277,9 +307,7 @@ class MeCom:
         parameter = self._get_parameter(parameter_name, parameter_id)
 
         # execute query
-        vs = self._execute(VS(value=value, parameter=parameter, sequence=self.SEQUENCE_COUNTER, *args, **kwargs),
-                           *args,
-                           **kwargs)
+        vs = self._execute(VS(value=value, parameter=parameter, sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
 
         # increment sequence counter
         self._inc()
@@ -294,7 +322,7 @@ class MeCom:
         except ResponseException as ex:
             return [False, ex]
 
-        return [True, vr.PAYLOAD[1]]
+        return [True, vr.RESPONSE.PAYLOAD[0]]
 
     def set_parameter(self, value, parameter_name=None, parameter_id=None, *args, **kwargs):
         # get the query object
@@ -309,12 +337,13 @@ class MeCom:
         # return True if the values are equal
         return [value == value_set, value_set]
 
+    # returns device address
+    identify = partialmethod(get_parameter, parameter_name="Device Address")
 
-    def identify(self):
+    def status(self, *args, **kwargs):
         # query device status
-        vr = self._get(parameter_name="Device Status")
+        success, status_id = self.get_parameter(parameter_name="Device Status", *args, **kwargs)
 
-        status_id = vr.RESPONSE.PAYLOAD[0]
         if status_id == 0:
             status_name = "Init"
         elif status_id == 1:
@@ -331,21 +360,22 @@ class MeCom:
             status_name = "Unknown"
 
         # return address and status
-        return [vr.ADDRESS, status_name]
+        return [success, status_name]
 
 
 if __name__ == "__main__":
     with MeCom("/dev/ttyUSB0") as mc:
-        # which device are we talking to?
-        address, status = mc.identify()
-        print("connected to device: {}\tstatus {}".format(address, status))
+        # # which device are we talking to?
+        success_1, address = mc.identify()
+        success_2, status = mc.status()
+        print("success: {}, connected to device: {}, status: {}".format(success_1 and success_2, address, status))
 
         # get object temperature
-        success, temp = mc.get_parameter(parameter_name="Object Temperature")
+        success, temp = mc.get_parameter(parameter_name="Object Temperature", address=address)
         print("query for object temperature succeeded: {}, measured temperature {}°C".format(success, temp))
 
         # is the loop stable?
-        success, stable_id = mc.get_parameter(parameter_name="Object Temperature")
+        success, stable_id = mc.get_parameter(parameter_name="Temperature is Stable", address=address)
         if stable_id == 0:
             stable = "temperature regulation is not active"
         elif stable_id == 1:
@@ -355,5 +385,15 @@ if __name__ == "__main__":
         else:
             stable = "state is unknown"
         print("query for loop stability succeeded: {}, loop {}".format(success, stable))
+
+        # # setting a new device address and get again
+        # new_address = 6
+        # success, value_set = mc.set_parameter(value=new_address, parameter_name="Device Address")
+        # print("setting device address to {} suceeded: {}".format(value_set, success))
+        #
+        # # get device address again
+        # success_1, address = mc.identify()
+        # success_2, status = mc.status()
+        # print("success: {}, connected to device: {}, status: {}".format(success_1 and success_2, address, status))
 
         print("leaving with-statement, connection will be closed")
