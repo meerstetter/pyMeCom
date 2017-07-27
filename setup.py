@@ -40,5 +40,5 @@ setup(name='pymecom',
       author_email='sp@laz0r.de',
       packages=packages,
       package_dir={'': path},
-      install_requirements=install_requirements
+      install_requires=install_requirements
       )
