@@ -22,7 +22,7 @@ def get_version_from_git():
         return __version__ + v
     except Exception as ex:
         print("Could not retrieve git version information")
-        print("#"*30)
+        print("#" * 30)
         print(ex)
     return __version__  # default
 
@@ -33,24 +33,12 @@ def readme():
 
 
 setup(name='pymecom',
-      version='0.1',
-      description='Meerstetter TEC communication',
+      version=__version__,
+      description="pyMeCom version={version}".format(version=str(get_version_from_git())),
       url='http://bec-git.physik.uni-kl.de/suthep/pymecom',
       author='Suthep Pomjaksilp',
       author_email='sp@laz0r.de',
-      license='',
-      packages=['mecom'],
-      install_requires=[
-          'pyserial',
-          'requests'
-      ],
-
-      zip_safe=False)
-
-setup(name='pymecom',
-      version=__version__,
-      description="pyMeCom version={version}".format(version=str(get_version_from_git())),
       packages=packages,
       package_dir={'': path},
       install_requirements=install_requirements
-)
+      )
