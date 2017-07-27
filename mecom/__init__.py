@@ -242,11 +242,14 @@ class MeCom:
         self._wait_for_response(*args, **kwargs)
 
         # get answer from queue and attach to query
-        response_frame = self.receiver.PACKET_QUEUE.get(*args, **kwargs)
+        response_frame = self.receiver.PACKET_QUEUE._get(*args, **kwargs)
         query.set_response(response_frame)
 
         # did we encounter an error?
         self._raise(query)
+
+        # clear buffers
+        self.ser.reset_output_buffer()
 
         return query
 
@@ -284,6 +287,29 @@ class MeCom:
         # return the query with response
         return vs
 
+    def get_parameter(self, parameter_name=None, parameter_id=None, *args, **kwargs):
+        # get the query object
+        try:
+            vr = self._get(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
+        except ResponseException as ex:
+            return [False, ex]
+
+        return [True, vr.PAYLOAD[1]]
+
+    def set_parameter(self, value, parameter_name=None, parameter_id=None, *args, **kwargs):
+        # get the query object
+        try:
+            vs = self._set(value=value, parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
+        except ResponseException as ex:
+            return [False, ex]
+
+        # check if value setting has succeeded
+        state, value_set = self.get_parameter(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
+
+        # return True if the values are equal
+        return [value == value_set, value_set]
+
+
     def identify(self):
         # query device status
         vr = self._get(parameter_name="Device Status")
@@ -310,5 +336,24 @@ class MeCom:
 
 if __name__ == "__main__":
     with MeCom("/dev/ttyUSB0") as mc:
+        # which device are we talking to?
         address, status = mc.identify()
         print("connected to device: {}\tstatus {}".format(address, status))
+
+        # get object temperature
+        success, temp = mc.get_parameter(parameter_name="Object Temperature")
+        print("query for object temperature succeeded: {}, measured temperature {}°C".format(success, temp))
+
+        # is the loop stable?
+        success, stable_id = mc.get_parameter(parameter_name="Object Temperature")
+        if stable_id == 0:
+            stable = "temperature regulation is not active"
+        elif stable_id == 1:
+            stable = "is not stable"
+        elif stable_id == 2:
+            stable = "is stable"
+        else:
+            stable = "state is unknown"
+        print("query for loop stability succeeded: {}, loop {}".format(success, stable))
+
+        print("leaving with-statement, connection will be closed")
