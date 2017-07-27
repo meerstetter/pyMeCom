@@ -1,21 +1,21 @@
-from serial import Serial
-from serial.threaded import ReaderThread, FramedPacket
-
+# standard python
+import time
+from struct import pack, unpack
+from functools import partialmethod
 from queue import Queue
 
+# more special pip packages
+from serial import Serial
+from serial.threaded import ReaderThread, FramedPacket
 from PyCRC.CRCCCITT import CRCCCITT
 
-import time
-
-from struct import pack, unpack
-
+# from scipy stack
 import pandas as pd
 
-from functools import partialmethod
-
-from exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout
-
-from commands import PARAMETERS, ERRORS
+# from this package
+from . import commands, exceptions
+from .exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout
+from .commands import PARAMETERS, ERRORS
 
 
 class MePacket(FramedPacket):
