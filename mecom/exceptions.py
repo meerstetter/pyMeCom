@@ -1,3 +1,8 @@
+"""
+This file contains some custom expceptions.
+"""
+
+
 class ResponseException(Exception):
     pass
 
@@ -13,3 +18,6 @@ class WrongResponseSequence(ResponseException):
 class WrongChecksum(Exception):
     pass
 
+
+class UnknownParameter(Exception):
+    pass

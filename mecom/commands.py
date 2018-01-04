@@ -1,3 +1,9 @@
+"""
+Definitions of command and error codes as stated in the "Mecom" protocol standard.
+https://www.meerstetter.ch/category/35-latest-communication-protocols
+"""
+
+
 PARAMETERS = [
     {"id": 104, "name": "Device Status", "format": "INT32"},
     {"id": 2010, "name": "Status", "format": "INT32"},
