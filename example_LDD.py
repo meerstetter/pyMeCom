@@ -60,17 +60,30 @@ class MeerstetterLDD(object):
                 self._session = None
         return data
 
-    def set_temp(self, value):
+    def set_current(self, value):
         """
-        Set object temperature of channel to desired value.
+        Set laser diode cw current
         :param value: float
         :param channel: int
         :return:
         """
         # assertion to explicitly enter floats
         assert type(value) is float
-        logging.info("set object temperature for channel {} to {} C".format(self.channel, value))
-        return self.session().set_parameter(parameter_id=3000, value=value, address=self.address, parameter_instance=self.channel)
+        logging.info("set current to {} C".format(self.channel, value))
+        return self.session().set_parameter(parameter_id=2001, value=value, address=self.address, parameter_instance=self.channel)
+        
+
+    def set_current_limit(self, value):
+        """
+        Set laser diode cw current limit
+        :param value: float
+        :param channel: int
+        :return:
+        """
+        # assertion to explicitly enter floats
+        assert type(value) is float
+        logging.info("set current limit to {} C".format(self.channel, value))
+        return self.session().set_parameter(parameter_id=3020, value=value, address=self.address, parameter_instance=self.channel)
 
     def _set_enable(self, enable=True):
         """
@@ -80,8 +93,8 @@ class MeerstetterLDD(object):
         :return:
         """
         value, description = (1, "on") if enable else (0, "off")
-        logging.info("set loop for channel {} to {}".format(self.channel, description))
-        return self.session().set_parameter(value=value, parameter_name="Status", address=self.address, parameter_instance=self.channel)
+        logging.info("set current output to {} to {}".format(self.channel, description))
+        return self.session().set_parameter(value=value, parameter_id="2020", address=self.address, parameter_instance=self.channel)
 
     def enable(self):
         return self._set_enable(True)
