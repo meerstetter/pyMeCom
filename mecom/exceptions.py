@@ -21,3 +21,6 @@ class WrongChecksum(Exception):
 
 class UnknownParameter(Exception):
     pass
+    
+class UnknownMeComType(Exception):
+    pass

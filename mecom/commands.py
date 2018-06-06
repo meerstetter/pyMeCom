@@ -4,7 +4,7 @@ https://www.meerstetter.ch/category/35-latest-communication-protocols
 """
 
 
-PARAMETERS = [
+TEC_PARAMETERS = [
     {"id": 104, "name": "Device Status", "format": "INT32"},
     {"id": 108, "name": "Save Data to Flash", "format": "INT32"},
     {"id": 109, "name": "Flash Status", "format": "INT32"},
@@ -19,6 +19,20 @@ PARAMETERS = [
     {"id": 2051, "name": "Device Address", "format": "INT32"},
     {"id": 3000, "name": "Target Object Temp (Set)", "format": "FLOAT32"},
     {"id": 6310, "name": "Delay till Restart", "format": "FLOAT32"},
+]
+
+
+
+LDD_PARAMETERS = [
+    {"id": 104, "name": "Device Status", "format": "INT32"},
+    {"id": 108, "name": "Save Data to Flash", "format": "INT32"},
+    {"id": 109, "name": "Flash Status", "format": "INT32"},
+    {"id": 1016, "name": "Laser Diode Current", "format": "FLOAT32"},
+    {"id": 1017, "name": "Laser Diode Voltage", "format": "FLOAT32"},
+    {"id": 1015, "name": "Laser Diode Temperature", "format": "FLOAT32"},
+    {"id": 3020, "name": "Current Limit Max [A]", "format": "FLOAT32"},
+    {"id": 3040, "name": "Device Address", "format": "INT32"},
+
 ]
 
 ERRORS = [

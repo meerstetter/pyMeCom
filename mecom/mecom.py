@@ -12,7 +12,7 @@ from PyCRC.CRCCCITT import CRCCCITT
 
 # from this package
 from .exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout, UnknownParameter
-from .commands import PARAMETERS, ERRORS
+from .commands import TEC_PARAMETERS, LDD_PARAMETERS, ERRORS
 
 
 class Parameter(object):
@@ -56,17 +56,25 @@ class Error(object):
 
 class ParameterList(object):
     """
-    Contains a list of Parameter().
+    Contains a list of Parameter() for either TEC (metype = 'TEC') 
+    or LDD (metype = 'TEC') controller.
     Provides searching via id or name.
+    :param error_dict: dict
     """
 
-    def __init__(self):
+    def __init__(self,metype='TEC'):
         """
         Reads the parameter dicts from commands.py.
         """
         self._PARAMETERS = []
-        for parameter in PARAMETERS:
-            self._PARAMETERS.append(Parameter(parameter))
+        if metype == 'TEC':
+            for parameter in TEC_PARAMETERS:
+                self._PARAMETERS.append(Parameter(parameter))
+        elif metype =='LDD':
+            for parameter in LDD_PARAMETERS:
+                self._PARAMETERS.append(Parameter(parameter))
+        else:
+            raise UnknownMeComType
 
     def get_by_id(self, id):
         """
@@ -135,7 +143,9 @@ class MeFrame(object):
             elif type(p) is int:
                 frame += "{:08X}".format(p)
             elif type(p) is float:
-                frame += hex(unpack('<I', pack('<f', p))[0])[2:].upper()  # please do not ask
+                # frame += hex(unpack('<I', pack('<f', p))[0])[2:].upper()  # please do not ask
+                # if p = 0 fails, e.g. !01000400000000 composes to b'!0100040'
+                frame += '{:08X}'.format(unpack('<I', pack('<f', p))[0])
             # frame += p if type(p) is str else "{:08X}".format(p)
         # if we only want a partial frame, return here
         if part:
@@ -338,8 +348,8 @@ class DeviceError(MeFrame):
         Read error codes from command.py and parse into a list of Error() instances.
         """
         super(DeviceError, self).__init__()
+        self._ERRORS = []
         for error in ERRORS:
-            self._ERRORS = []
             self._ERRORS.append(Error(error))
 
     def _get_by_code(self, code):
@@ -407,11 +417,12 @@ class MeCom:
     """
     SEQUENCE_COUNTER = 1
 
-    def __init__(self, serialport="/dev/ttyUSB0", timeout=1, baudrate=57600):
+    def __init__(self, serialport="/dev/ttyUSB0", timeout=1, baudrate=57600,metype = 'TEC'):
         """
         Initialize communication with serial port.
         :param serialport: str
         :param timeout: int
+        :param metype: str: either 'TEC' or 'LDD'
         """
         # initialize serial connection
         self.ser = Serial(port=serialport, timeout=timeout, write_timeout=timeout, baudrate=baudrate)
@@ -421,7 +432,7 @@ class MeCom:
         # self.receiver = self.protocol.__enter__()
 
         # initialize parameters
-        self.PARAMETERS = ParameterList()
+        self.PARAMETERS = ParameterList(metype)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.ser.__exit__(exc_type, exc_val, exc_tb)
