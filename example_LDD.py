@@ -9,6 +9,7 @@ from serial import SerialException
 # default queries from command table below
 DEFAULT_QUERIES = [
     "current",
+    "max current",
 ]
 
 # syntax
@@ -17,6 +18,7 @@ COMMAND_TABLE = {
     "Device Status": [104, ""],
     "current": [1016, "A"],
     "max current": [3020, "A"],
+    "temperature": [1015, "°C"],
 }
 
 
@@ -94,7 +96,7 @@ class MeerstetterLDD(object):
         """
         value, description = (1, "on") if enable else (0, "off")
         logging.info("set current output to {} to {}".format(self.channel, description))
-        return self.session().set_parameter(value=value, parameter_id="2020", address=self.address, parameter_instance=self.channel)
+        return self.session().set_parameter(value=value, parameter_id=2020, address=self.address, parameter_instance=self.channel)
 
     def enable(self):
         return self._set_enable(True)

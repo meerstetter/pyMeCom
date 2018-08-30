@@ -103,7 +103,7 @@ class MeFrame(object):
     """
     Basis structure of a MeCom frame as defined in the specs.
     """
-    _TYPES = {"UNIT8": "!H", "UNIT16": "!L", "INT32": "!i", "FLOAT32": "!f"}
+    _TYPES = {"UINT8": "!H", "UINT16": "!L", "INT32": "!i", "FLOAT32": "!f"}
     _SOURCE = ""
     _EOL = "\r"  # carriage return
 
@@ -179,7 +179,7 @@ class Query(MeFrame):
     _SOURCE = "#"
     _PAYLOAD_START = None
 
-    def __init__(self, parameter, sequence, address=0, parameter_instance=1):
+    def __init__(self, parameter=None, sequence=0, address=0, parameter_instance=1):
         """
         To be initialized with a target device address (default=broadcast), the channel, teh sequence number and a
         Parameter() instance of the corresponding parameter.
@@ -198,9 +198,9 @@ class Query(MeFrame):
 
         self.ADDRESS = address
         self.SEQUENCE = sequence
-
-        # UNIT16 4 hex digits
-        self.PAYLOAD.append("{:04X}".format(parameter.id))
+        if parameter is not None:
+            # UNIT16 4 hex digits
+            self.PAYLOAD.append("{:04X}".format(parameter.id))
         # UNIT8 2 hex digits
         self.PAYLOAD.append("{:02X}".format(parameter_instance))
 
@@ -214,6 +214,10 @@ class Query(MeFrame):
         # is it an ACK packet?
         if len(response_frame) == 10:
             self.RESPONSE = ACK()
+            self.RESPONSE.decompose(response_frame)
+        # is it an info string packet/response_frame does not contain source (!)
+        elif len(response_frame) == 30:
+            self.RESPONSE = IFResponse()
             self.RESPONSE.decompose(response_frame)
         # is it an error packet?
         elif b'+' in response_frame:
@@ -278,6 +282,53 @@ class VS(Query):
         self.PAYLOAD.append(value)
 
         # no need to initialize response format, we want ACK
+        
+        
+
+
+class RS(Query):
+    """
+    Implementing system reset.
+    """
+    _PAYLOAD_START = 'RS'
+
+    def __init__(self, sequence=1, address=0, parameter_instance=1):
+        """
+        Create a query to set a parameter value.
+        :param sequence: int
+        :param address: int
+        :param parameter_instance: int
+        """
+        
+        # init header (equal for get and set queries)
+        super(RS, self).__init__(parameter=None,
+                         sequence=sequence,
+                         address=address,
+                         parameter_instance=parameter_instance)
+
+        # no need to initialize response format, we want ACK
+        
+class IF(Query):
+    """
+    Implementing device info query.
+    """
+    _PAYLOAD_START = '?IF'
+
+    def __init__(self, sequence=1, address=0, parameter_instance=1):
+        """
+        Create a query to set a parameter value.
+        :param sequence: int
+        :param address: int
+        :param parameter_instance: int
+        """
+        
+        # init header (equal for get and set queries)
+        super(IF, self).__init__(parameter=None,
+                         sequence=sequence,
+                         address=address,
+                         parameter_instance=parameter_instance)
+
+        # no need to initialize response format, we want ACK
 
 
 class VRResponse(MeFrame):
@@ -315,6 +366,25 @@ class ACK(MeFrame):
     ACK command sent by the device.
     """
     _SOURCE = "!"
+    
+    def decompose(self, frame_bytes):
+        """
+        Takes bytes as input and builds the instance.
+        :param frame_bytes: bytes
+        :return:
+        """
+        frame_bytes = self._SOURCE.encode() + frame_bytes
+        self._decompose_header(frame_bytes)
+        
+        frame = frame_bytes.decode()
+        self.CRC = int(frame[-4:], 16)
+        
+
+class IFResponse(MeFrame):
+    """
+    ACK command sent by the device.
+    """
+    _SOURCE = "!"
 
     def crc(self, in_crc=None):
         """
@@ -334,7 +404,8 @@ class ACK(MeFrame):
         self._decompose_header(frame_bytes)
 
         frame = frame_bytes.decode()
-        self.CRC = int(frame[7:], 16)
+        self.PAYLOAD = frame[7:-4]
+        self.CRC = int(frame[-4:], 16)
 
 
 class DeviceError(MeFrame):
@@ -578,8 +649,7 @@ class MeCom:
     def set_parameter(self, value, parameter_name=None, parameter_id=None, *args, **kwargs):
         """
         Set the new value of a parameter given by name or id.
-        Performs an immediate get_parameter to check success.
-        Returns success and new value.
+        Returns success.
         :param value:
         :param parameter_name:
         :param parameter_id:
@@ -591,11 +661,34 @@ class MeCom:
         vs = self._set(value=value, parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
 
         # check if value setting has succeeded
-        value_set = self.get_parameter(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
+        #
+        # Not necessary as we get an acknolewdge response or Value is out of range
+        # exception when an invalid value was passed. 
+        # current implementation also often fails due to rounding, e.g. setting 1.0
+        # but returning 0.999755859375 when performing a self.get_parameter
+        # value_set = self.get_parameter(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
 
-        # return True if the values are equal
-        return value == value_set
+        # return True if we got an ACK
+        return type(vs.RESPONSE) == ACK
+    
+    def reset_device(self,*args, **kwargs):
+        """
+        Resets the device after an error has occured
+        """
+        rs = self._execute(RS(sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
+        self._inc()
+        return type(rs.RESPONSE) == ACK
+    
+    def info(self,*args, **kwargs):
+        """
+        Resets the device after an error has occured
+        """
+        info = self._execute(IF(sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
+        self._inc()
+        return info.RESPONSE.PAYLOAD
 
+
+    
     # returns device address
     identify = partialmethod(get_parameter, parameter_name="Device Address")
     """
