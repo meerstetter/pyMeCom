@@ -221,6 +221,58 @@ class Query(MeFrame):
             raise WrongResponseSequence
 
 
+class RS(MeFrame):
+    """
+    structure of the Reset device (RS) command. Has the attribute RESPONSE which contains the answer received
+    by the device (ACK if ok, otherwise error). The response is set via set_response
+    """
+    _SOURCE = "#"
+    _PAYLOAD_START = "RS"
+
+    def __init__(self, sequence, address=0, parameter_instance=1):
+        """
+        To be initialized with a target device address (default=broadcast), the channel and the sequence number
+        :param sequence: int
+        :param address: int
+        :param parameter_instance: int
+        """
+        super(RS, self).__init__()
+
+        if hasattr(self, "_PAYLOAD_START"):
+            self.PAYLOAD.append(self._PAYLOAD_START)
+
+        self.RESPONSE = None
+        self._RESPONSE_FORMAT = None
+
+        self.ADDRESS = address
+        self.SEQUENCE = sequence
+
+    def set_response(self, response_frame):
+        """
+        Takes the bytes received from the device as input and creates the corresponding response instance.
+        :param response_frame: bytes
+        :return:
+        """
+        # check the type of the response
+        # is it an ACK packet?
+        if len(response_frame) == 10:
+            self.RESPONSE = ACK()
+            self.RESPONSE.decompose(response_frame)
+        # is it an error packet?
+        elif b'+' in response_frame:
+            self.RESPONSE = DeviceError()
+            self.RESPONSE.decompose(response_frame)
+        # nope it's a response to a parameter query
+        else:
+            self.RESPONSE = VRResponse(self._RESPONSE_FORMAT)
+            # if the checksum is wrong, this statement raises
+            self.RESPONSE.decompose(response_frame)
+
+        # did we get the right response to our query?
+        if self.SEQUENCE != self.RESPONSE.SEQUENCE:
+            raise WrongResponseSequence
+
+
 class VR(Query):
     """
     Implementing query to get a parameter from the device (?VR).
@@ -549,6 +601,21 @@ class MeCom:
 
         # return the query with response
         return vs
+
+    def reset(self, *args, **kwargs):
+        """
+        Send the RS command to the device.
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        # execute query
+        rs = self._execute(RS(sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
+        # increment sequence counter
+        self._inc()
+
+        # return the query with response
+        return rs
 
     def get_parameter(self, parameter_name=None, parameter_id=None, *args, **kwargs):
         """
