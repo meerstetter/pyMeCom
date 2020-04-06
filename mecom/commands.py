@@ -34,6 +34,11 @@ LDD_PARAMETERS = [
     {"id": 3040, "name": "Device Address", "format": "INT32"},
     {"id": 2001, "name": "Current CW", "format": "FLOAT32"},
     {"id": 2020, "name": "Input Source", "format": "INT32"},
+    {"id": 102, "name": "Device Serial Number", "format": "INT32"},
+    {"id": 3050 , "name": "Baud Rate", "format": "INT32"},
+    {"id": 3051 , "name": "Response Delay ", "format": "INT32"},
+    {"id": 3080, "name": "Hardware PIN", "format": "INT32"},
+    
 ]
 
 ERRORS = [
