@@ -144,9 +144,8 @@ class MeFrame(object):
                 frame += "{:08X}".format(p)
             elif type(p) is float:
                 # frame += hex(unpack('<I', pack('<f', p))[0])[2:].upper()  # please do not ask
-                # if p = 0 fails, e.g. !01000400000000 composes to b'!0100040'
-                frame += '{:08X}'.format(unpack('<I', pack('<f', p))[0])
-            # frame += p if type(p) is str else "{:08X}".format(p)
+                # if p = 0 CRC fails, e.g. !01000400000000 composes to b'!0100040' / missing zero padding
+                frame += '{:08X}'.format(unpack('<I', pack('<f', p))[0])   #still do not aks
         # if we only want a partial frame, return here
         if part:
             return frame.encode()
