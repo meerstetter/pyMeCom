@@ -526,6 +526,8 @@ class MeCom:
 
     def _inc(self):
         self.SEQUENCE_COUNTER += 1
+        # sequence in controller is int16 and overflows 
+        self.SEQUENCE_COUNTER = self.SEQUENCE_COUNTER % (2**16)
 
     @staticmethod
     def _raise(query):
