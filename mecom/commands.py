@@ -6,8 +6,10 @@ https://www.meerstetter.ch/category/35-latest-communication-protocols
 
 TEC_PARAMETERS = [
     {"id": 104, "name": "Device Status", "format": "INT32"},
+    {"id": 105, "name": "Error Number", "format": "INT32"},
     {"id": 108, "name": "Save Data to Flash", "format": "INT32"},
     {"id": 109, "name": "Flash Status", "format": "INT32"},
+
     {"id": 1000, "name": "Object Temperature", "format": "FLOAT32"},
     {"id": 1001, "name": "Sink Temperature", "format": "FLOAT32"},
     {"id": 1010, "name": "Target Object Temperature", "format": "FLOAT32"},
@@ -15,10 +17,23 @@ TEC_PARAMETERS = [
     {"id": 1020, "name": "Actual Output Current", "format": "FLOAT32"},
     {"id": 1021, "name": "Actual Output Voltage", "format": "FLOAT32"},
     {"id": 1200, "name": "Temperature is Stable", "format": "INT32"},
+
     {"id": 2010, "name": "Status", "format": "INT32"},
+    {"id": 2030, "name": "Current Limitation", "format": "FLOAT32"},
+    {"id": 2031, "name": "Voltage Limitation", "format": "FLOAT32"},
+    {"id": 2032, "name": "Current Error Threshold", "format": "FLOAT32"},
+    {"id": 2033, "name": "Voltage Error Threshold", "format": "FLOAT32"},
     {"id": 2051, "name": "Device Address", "format": "INT32"},
+
     {"id": 3000, "name": "Target Object Temp (Set)", "format": "FLOAT32"},
+
+    {"id": 6300, "name": "Source Selection", "format": "INT32"},
+    {"id": 6302, "name": "Observe Mode", "format": "INT32"},
     {"id": 6310, "name": "Delay till Restart", "format": "FLOAT32"},
+
+    {"id": 50000, "name": "Live Enable", "format": "INT32"},
+
+    {"id": 52200, "name": "External Object Temperature", "format": "FLOAT32"},
 ]
 
 
