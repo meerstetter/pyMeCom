@@ -5,7 +5,7 @@ This package was developed to control several TEC devices on a raspberry pi by c
 ## Requirements
 1. this code is only tested in Python 3 running in a linux OS
 1. `pySerial` in a version `>= 3.1` https://pypi.python.org/pypi/pyserial
-1. `PyCRC` https://pypi.org/project/pythoncrc/
+1. `PythonCRC` https://pypi.org/project/pythoncrc/
 
 ## Installation
 1. clone the repository
