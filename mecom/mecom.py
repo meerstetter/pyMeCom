@@ -276,6 +276,13 @@ class VS(Query):
                          address=address,
                          parameter_instance=parameter_instance)
 
+
+        # cast the value parameter to the correct type
+        conversions = {'FLOAT32': float, 'INT32': int}
+        assert parameter.format in conversions.keys()
+        
+        value=conversions[parameter.format](value)
+
         # the set value
         self.PAYLOAD.append(value)
 
