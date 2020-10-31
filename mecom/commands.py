@@ -31,7 +31,12 @@ TEC_PARAMETERS = [
     {"id": 6302, "name": "Observe Mode", "format": "INT32"},
     {"id": 6310, "name": "Delay till Restart", "format": "FLOAT32"},
 
-    {"id": 50000, "name": "Live Enable", "format": "INT32"},
+    {"id": 50000, "name": "Live Enable", "format": "INT32"},    
+    {"id": 50001, "name": "Live Set Current", "format": "FLOAT32"},
+    {"id": 50002, "name": "Live Set Voltage", "format": "FLOAT32"},
+    
+    {"id": 50011, "name": "Object Target Temperature Source Selection", "format": "INT32"},
+    {"id": 50012, "name": "Live Target Object Temperature", "format": "FLOAT32"},
 
     {"id": 52200, "name": "External Object Temperature", "format": "FLOAT32"},
 ]
