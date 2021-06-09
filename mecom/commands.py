@@ -64,8 +64,6 @@ LDD_PARAMETERS = [
     {"id": 52103, "name": "Read Input States", "format": "INT32"},
 ]
     
-]
-
 ERRORS = [
     {"code": 1, "symbol": "EER_CMD_NOT_AVAILABLE", "description": "Command not available"},
     {"code": 2, "symbol": "EER_DEVICE_BUSY", "description": "Device is busy"},
