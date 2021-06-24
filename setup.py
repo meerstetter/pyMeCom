@@ -5,7 +5,7 @@ setup(
     version='0.1',
     packages=['mecom'],
     install_requires = ['pySerial>=3.4',
-                            'PyCRC'],
+                        'pythoncrc'],
     url='https://github.com/spomjaksilp/pyMeCom',
     license='',
     author='Suthep Pomjaksilp',
