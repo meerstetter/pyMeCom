@@ -39,7 +39,12 @@ TEC_PARAMETERS = [
     {"id": 52102, "name": "Set Output States", "format": "INT32"},
     {"id": 52103, "name": "Read Input States", "format": "INT32"},
 
-    {"id": 50000, "name": "Live Enable", "format": "INT32"},
+    {"id": 50000, "name": "Live Enable", "format": "INT32"},    
+    {"id": 50001, "name": "Live Set Current", "format": "FLOAT32"},
+    {"id": 50002, "name": "Live Set Voltage", "format": "FLOAT32"},
+    
+    {"id": 50011, "name": "Object Target Temperature Source Selection", "format": "INT32"},
+    {"id": 50012, "name": "Live Target Object Temperature", "format": "FLOAT32"},
 
     {"id": 52200, "name": "External Object Temperature", "format": "FLOAT32"},
 ]

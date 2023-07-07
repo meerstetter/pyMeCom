@@ -5,13 +5,14 @@ The magic happens in this file.
 from struct import pack, unpack
 from functools import partialmethod
 import time
+from threading import Lock
 
 # more special pip packages
 from serial import Serial
 from PyCRC.CRCCCITT import CRCCCITT
 
 # from this package
-from .exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout, UnknownParameter
+from .exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout, UnknownParameter, UnknownMeComType
 from .commands import TEC_PARAMETERS, LDD_PARAMETERS, ERRORS
 
 
@@ -128,6 +129,9 @@ class MeFrame(object):
         if in_crc is not None and in_crc != self.CRC:
             raise WrongChecksum
 
+    def set_sequence(self, sequence):
+        self.SEQUENCE = sequence
+
     def compose(self, part=False):
         """
         Returns the frame as bytes, the return-value can be directly send via serial.
@@ -178,7 +182,7 @@ class Query(MeFrame):
     _SOURCE = "#"
     _PAYLOAD_START = None
 
-    def __init__(self, parameter=None, sequence=0, address=0, parameter_instance=1):
+    def __init__(self, parameter=None, address=0, parameter_instance=1):
         """
         To be initialized with a target device address (default=broadcast), the channel, teh sequence number and a
         Parameter() instance of the corresponding parameter.
@@ -196,7 +200,6 @@ class Query(MeFrame):
         self._RESPONSE_FORMAT = None
 
         self.ADDRESS = address
-        self.SEQUENCE = sequence
         if parameter is not None:
             # UNIT16 4 hex digits
             self.PAYLOAD.append("{:04X}".format(parameter.id))
@@ -239,17 +242,15 @@ class VR(Query):
     """
     _PAYLOAD_START = "?VR"
 
-    def __init__(self, parameter, sequence=1, address=0, parameter_instance=1):
+    def __init__(self, parameter, address=0, parameter_instance=1):
         """
         Create a query to get a parameter value.
         :param parameter: Parameter
-        :param sequence: int
         :param address: int
         :param parameter_instance: int
         """
         # init header (equal for get and set queries
         super(VR, self).__init__(parameter=parameter,
-                         sequence=sequence,
                          address=address,
                          parameter_instance=parameter_instance)
         # initialize response
@@ -262,20 +263,25 @@ class VS(Query):
     """
     _PAYLOAD_START = "VS"
 
-    def __init__(self, value, parameter, sequence=1, address=0, parameter_instance=1):
+    def __init__(self, value, parameter, address=0, parameter_instance=1):
         """
         Create a query to set a parameter value.
         :param value: int or float
         :param parameter: Parameter
-        :param sequence: int
         :param address: int
         :param parameter_instance: int
         """
         # init header (equal for get and set queries)
         super(VS, self).__init__(parameter=parameter,
-                         sequence=sequence,
                          address=address,
                          parameter_instance=parameter_instance)
+
+
+        # cast the value parameter to the correct type
+        conversions = {'FLOAT32': float, 'INT32': int}
+        assert parameter.format in conversions.keys()
+        
+        value=conversions[parameter.format](value)
 
         # the set value
         self.PAYLOAD.append(value)
@@ -291,17 +297,15 @@ class RS(Query):
     """
     _PAYLOAD_START = 'RS'
 
-    def __init__(self, sequence=1, address=0, parameter_instance=1):
+    def __init__(self, address=0, parameter_instance=1):
         """
         Create a query to set a parameter value.
-        :param sequence: int
         :param address: int
         :param parameter_instance: int
         """
         
         # init header (equal for get and set queries)
         super(RS, self).__init__(parameter=None,
-                         sequence=sequence,
                          address=address,
                          parameter_instance=parameter_instance)
 
@@ -313,17 +317,15 @@ class IF(Query):
     """
     _PAYLOAD_START = '?IF'
 
-    def __init__(self, sequence=1, address=0, parameter_instance=1):
+    def __init__(self, address=0, parameter_instance=1):
         """
         Create a query to set a parameter value.
-        :param sequence: int
         :param address: int
         :param parameter_instance: int
         """
         
         # init header (equal for get and set queries)
         super(IF, self).__init__(parameter=None,
-                         sequence=sequence,
                          address=address,
                          parameter_instance=parameter_instance)
 
@@ -496,6 +498,7 @@ class MeCom:
         """
         # initialize serial connection
         self.ser = Serial(port=serialport, timeout=timeout, write_timeout=timeout, baudrate=baudrate)
+        self.ser_lock = Lock()
 
         # start protocol thread
         # self.protocol = ReaderThread(serial_instance=self.ser, protocol_factory=MePacket)
@@ -552,26 +555,34 @@ class MeCom:
             return recv
 
     def _execute(self, query):
-        # clear buffers
-        self.ser.reset_output_buffer()
-        self.ser.reset_input_buffer()
-
-        # send query
-        self.ser.write(query.compose())
-        # print(query.compose())
-
-        # flush write cache
-        self.ser.flush()
-
-        # initialize response and carriage return
-        cr = "\r".encode()
-        response_frame = b''
-        response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
-
-        # read until stop byte
-        while response_byte != cr:
-            response_frame += response_byte
-            response_byte = self._read(size=1)
+        self.ser_lock.acquire()
+        
+        try:
+            # clear buffers
+            self.ser.reset_output_buffer()
+            self.ser.reset_input_buffer()
+    
+            query.set_sequence(self.SEQUENCE_COUNTER)
+            # send query
+            self.ser.write(query.compose())
+            # print(query.compose())
+    
+            # flush write cache
+            self.ser.flush()
+    
+            # initialize response and carriage return
+            cr = "\r".encode()
+            response_frame = b''
+            response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
+    
+            # read until stop byte
+            while response_byte != cr:
+                response_frame += response_byte
+                response_byte = self._read(size=1)
+        finally:
+            # increment sequence counter
+            self._inc()
+            self.ser_lock.release()
 
         # strip source byte (! or #, but for a response always !)
         response_frame = response_frame[1:]
@@ -599,10 +610,8 @@ class MeCom:
         parameter = self._find_parameter(parameter_name, parameter_id)
 
         # execute query
-        vr = self._execute(VR(parameter=parameter, sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
+        vr = self._execute(VR(parameter=parameter, *args, **kwargs))
 
-        # increment sequence counter
-        self._inc()
         # print(vr.PAYLOAD)
         # print(vr.RESPONSE.PAYLOAD)
         # return the query with response
@@ -624,10 +633,7 @@ class MeCom:
         parameter = self._find_parameter(parameter_name, parameter_id)
 
         # execute query
-        vs = self._execute(VS(value=value, parameter=parameter, sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
-
-        # increment sequence counter
-        self._inc()
+        vs = self._execute(VS(value=value, parameter=parameter, *args, **kwargs))
 
         # return the query with response
         return vs
@@ -676,16 +682,14 @@ class MeCom:
         """
         Resets the device after an error has occured
         """
-        rs = self._execute(RS(sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
-        self._inc()
+        rs = self._execute(RS(*args, **kwargs))
         return type(rs.RESPONSE) == ACK
     
     def info(self,*args, **kwargs):
         """
         Resets the device after an error has occured
         """
-        info = self._execute(IF(sequence=self.SEQUENCE_COUNTER, *args, **kwargs))
-        self._inc()
+        info = self._execute(IF(*args, **kwargs))
         return info.RESPONSE.PAYLOAD
 
 
