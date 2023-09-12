@@ -524,6 +524,8 @@ class MeCom:
         :param parameter_id: int
         :return: Parameter
         """
+        assert parameter_name is not None or parameter_id is not None
+
         return self.PARAMETERS.get_by_name(parameter_name) if parameter_name is not None\
             else self.PARAMETERS.get_by_id(parameter_id)
 
@@ -604,10 +606,29 @@ class MeCom:
         :param kwargs:
         :return:
         """
-        assert parameter_name is not None or parameter_id is not None
 
         # search in DataFrame returns a dict
         parameter = self._find_parameter(parameter_name, parameter_id)
+
+        # execute query
+        vr = self._execute(VR(parameter=parameter, *args, **kwargs))
+
+        # print(vr.PAYLOAD)
+        # print(vr.RESPONSE.PAYLOAD)
+        # return the query with response
+        return vr
+
+    def _get_raw(self, parameter_id, parameter_format, *args, **kwargs):
+        """
+        Get a query object for a VR command (raw version).
+        :param parameter:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # construct from raw id and format specifier
+        parameter = Parameter({"id": parameter_id, "name": None, "format": parameter_format})
 
         # execute query
         vr = self._execute(VR(parameter=parameter, *args, **kwargs))
@@ -627,10 +648,28 @@ class MeCom:
         :param kwargs:
         :return:
         """
-        assert parameter_name is not None or parameter_id is not None
 
         # search in DataFrame returns a dict
         parameter = self._find_parameter(parameter_name, parameter_id)
+
+        # execute query
+        vs = self._execute(VS(value=value, parameter=parameter, *args, **kwargs))
+
+        # return the query with response
+        return vs
+
+    def _set_raw(self, value, parameter_id, parameter_format, *args, **kwargs):
+        """
+        Get a query object for a VS command (raw version).
+        :param value:
+        :param parameter:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # construct from raw id and format specifier
+        parameter = Parameter({"id": parameter_id, "name": None, "format": parameter_format})
 
         # execute query
         vs = self._execute(VS(value=value, parameter=parameter, *args, **kwargs))
@@ -653,6 +692,21 @@ class MeCom:
 
         return vr.RESPONSE.PAYLOAD[0]
 
+    def get_parameter_raw(self, parameter_id, parameter_format, *args, **kwargs):
+        """
+        Get the value of a parameter given by its id and format specifier.
+        note: use get_parameter() if you only want to use known commands
+        Returns a list of success and value.
+        :param parameter:
+        :param args:
+        :param kwargs:
+        :return: int or float
+        """
+        # get the query object
+        vr = self._get_raw(parameter_id=parameter_id, parameter_format=parameter_format, *args, **kwargs)
+
+        return vr.RESPONSE.PAYLOAD[0]
+
     def set_parameter(self, value, parameter_name=None, parameter_id=None, *args, **kwargs):
         """
         Set the new value of a parameter given by name or id.
@@ -669,7 +723,32 @@ class MeCom:
 
         # check if value setting has succeeded
         #
-        # Not necessary as we get an acknolewdge response or Value is out of range
+        # Not necessary as we get an acknowledge response or Value is out of range
+        # exception when an invalid value was passed. 
+        # current implementation also often fails due to rounding, e.g. setting 1.0
+        # but returning 0.999755859375 when performing a self.get_parameter
+        # value_set = self.get_parameter(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
+
+        # return True if we got an ACK
+        return type(vs.RESPONSE) == ACK
+
+    def set_parameter_raw(self, value, parameter_id, parameter_format, *args, **kwargs):
+        """
+        Set the new value of a parameter given by its id and format specifier.
+        note: use set_parameter() if you only want to use known commands
+        Returns success.
+        :param value:
+        :param parameter:
+        :param args:
+        :param kwargs:
+        :return: bool
+        """
+        # get the query object
+        vs = self._set_raw(value=value, parameter_id=parameter_id, parameter_format=parameter_format, *args, **kwargs)
+
+        # check if value setting has succeeded
+        #
+        # Not necessary as we get an acknowledge response or Value is out of range
         # exception when an invalid value was passed. 
         # current implementation also often fails due to rounding, e.g. setting 1.0
         # but returning 0.999755859375 when performing a self.get_parameter

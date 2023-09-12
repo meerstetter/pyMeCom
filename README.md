@@ -17,8 +17,9 @@ This package was developed to control several TEC devices on a raspberry pi by c
 For a basic example look at `mecom/mecom.py`, the `__main__` part contains an example communication.
 
 ## Additional parameters to get/set
-Only parameters present in `mecom/commands.py` can be used, this is a security feature in case someone uses a parameter like "flash firmware" by accident.
-Feel free to add more parameters to `mecom/commands.py`.
+Only parameters present in `mecom/commands.py` can be used with the regular functions, this is a security feature in case someone uses a parameter like "flash firmware" by accident.
+Use the *_raw functions if you need access to parameters not in `mecom/commands.py`.
+Furthermore, feel free to add more parameters to `mecom/commands.py`.
 
 ## Contribution
 This is by no means a polished software, contribution by submitting to this repository is appreciated.
