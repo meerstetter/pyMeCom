@@ -6,6 +6,7 @@ from struct import pack, unpack
 from functools import partialmethod
 import time
 from threading import Lock
+import socket
 
 # more special pip packages
 from serial import Serial
@@ -480,42 +481,23 @@ class DeviceError(MeFrame):
         return self._get_by_code(error_code).as_list()
 
 
-class MeCom:
+class MeComCommon:
     """
-    Main class. Import this one:
-    from qao.devices.mecom import MeCom
-
-    For a usage example see __main__
+    Shared communication class
     """
     SEQUENCE_COUNTER = 1
 
-    def __init__(self, serialport="/dev/ttyUSB0", timeout=1, baudrate=57600,metype = 'TEC'):
+    def __init__(self, metype='TEC'):
         """
         Initialize communication with serial port.
         :param serialport: str
         :param timeout: int
         :param metype: str: either 'TEC' or 'LDD'
         """
-        # initialize serial connection
-        self.ser = Serial(port=serialport, timeout=timeout, write_timeout=timeout, baudrate=baudrate)
-        self.ser_lock = Lock()
-
-        # start protocol thread
-        # self.protocol = ReaderThread(serial_instance=self.ser, protocol_factory=MePacket)
-        # self.receiver = self.protocol.__enter__()
+        self.lock = Lock()
 
         # initialize parameters
         self.PARAMETERS = ParameterList(metype)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.ser.__exit__(exc_type, exc_val, exc_tb)
-
-    def __enter__(self):
-        return self
-
-    def stop(self):
-        self.ser.flush()
-        self.ser.close()
 
     def _find_parameter(self, parameter_name, parameter_id):
         """
@@ -545,57 +527,6 @@ class MeCom:
         if type(query.RESPONSE) is DeviceError:
             code, description, symbol = query.RESPONSE.error()
             raise ResponseException("device {} raised {}".format(query.RESPONSE.ADDRESS, description))
-
-    def _read(self, size):
-        """
-        Read n=size bytes from serial, if <n bytes are received (serial.read() return because of timeout), raise a timeout.
-        """
-        recv = self.ser.read(size=size)
-        if len(recv) < size:
-            raise ResponseTimeout("timeout while communication via serial")
-        else:
-            return recv
-
-    def _execute(self, query):
-        self.ser_lock.acquire()
-        
-        try:
-            # clear buffers
-            self.ser.reset_output_buffer()
-            self.ser.reset_input_buffer()
-    
-            query.set_sequence(self.SEQUENCE_COUNTER)
-            # send query
-            self.ser.write(query.compose())
-            # print(query.compose())
-    
-            # flush write cache
-            self.ser.flush()
-    
-            # initialize response and carriage return
-            cr = "\r".encode()
-            response_frame = b''
-            response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
-    
-            # read until stop byte
-            while response_byte != cr:
-                response_frame += response_byte
-                response_byte = self._read(size=1)
-        finally:
-            # increment sequence counter
-            self._inc()
-            self.ser_lock.release()
-
-        # strip source byte (! or #, but for a response always !)
-        response_frame = response_frame[1:]
-
-        # print(response_frame)
-        query.set_response(response_frame)
-
-        # did we encounter an error?
-        self._raise(query)
-
-        return query
 
     def _get(self, parameter_name=None, parameter_id=None, *args, **kwargs):
         """
@@ -834,8 +765,187 @@ class MeCom:
         return True
 
 
+class MeComTcp(MeComCommon):
+    """
+    Main class (TCP). Import this one:
+    from qao.devices.mecom import MeComTCP
+
+    For a usage example see __main__
+    """
+    SEQUENCE_COUNTER = 1
+
+    def __init__(self, ipaddress, ipport=50000, metype='TEC'):
+        """
+        Initialize communication with TCP connection.
+        :param ipaddress: str
+:       :param ipport: int
+        :param timeout: int
+        :param metype: str: either 'TEC' or 'LDD'
+        """
+        # initialize network connection
+        self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp.connect((ipaddress, ipport))
+
+        # initialize parameters
+        self.PARAMETERS = ParameterList(metype)
+
+        super().__init__(metype)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.tcp.__exit__(exc_type, exc_val, exc_tb)
+
+    def __enter__(self):
+        return self
+
+    def stop(self):
+        self.tcp.close()
+
+    def _read(self, size):
+        """
+        Read n=size bytes from TCP, if <n bytes are received.
+        """
+        recv = b""
+        while (size - len(recv)) > 0:
+            recv += self.tcp.recv(size - len(recv))
+        if len(recv) < size:
+            raise ResponseTimeout("timeout while communication via network")
+        else:
+            return recv
+
+    def _execute(self, query):
+        self.lock.acquire()
+
+        try:
+            query.set_sequence(self.SEQUENCE_COUNTER)
+            # send query
+            self.tcp.sendall(query.compose())
+            # print(query.compose())
+
+            # initialize response and carriage return
+            cr = "\r".encode()
+            response_frame = b''
+            response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
+
+            # read until stop byte
+            while response_byte != cr:
+                response_frame += response_byte
+                response_byte = self._read(size=1)
+        finally:
+            # increment sequence counter
+            self._inc()
+            self.lock.release()
+
+        # strip source byte (! or #, but for a response always !)
+        response_frame = response_frame[1:]
+
+        # print(response_frame)
+        query.set_response(response_frame)
+
+        # did we encounter an error?
+        self._raise(query)
+
+        return query
+
+
+class MeComSerial(MeComCommon):
+    """
+    Main class (Serial). Import this one:
+    from qao.devices.mecom import MeComSerial
+
+    For a usage example see __main__
+    """
+    SEQUENCE_COUNTER = 1
+
+    def __init__(self, serialport="/dev/ttyUSB0", timeout=1, baudrate=57600, metype='TEC'):
+        """
+        Initialize communication with serial port.
+        :param serialport: str
+        :param timeout: int
+        :param metype: str: either 'TEC' or 'LDD'
+        """
+        # initialize serial connection
+        self.ser = Serial(port=serialport, timeout=timeout, write_timeout=timeout, baudrate=baudrate)
+
+        # start protocol thread
+        # self.protocol = ReaderThread(serial_instance=self.ser, protocol_factory=MePacket)
+        # self.receiver = self.protocol.__enter__()
+
+        # initialize parameters
+        self.PARAMETERS = ParameterList(metype)
+
+        super().__init__(metype)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.ser.__exit__(exc_type, exc_val, exc_tb)
+
+    def __enter__(self):
+        return self
+
+    def stop(self):
+        self.ser.flush()
+        self.ser.close()
+
+    def _read(self, size):
+        """
+        Read n=size bytes from serial, if <n bytes are received (serial.read() return because of timeout), raise a timeout.
+        """
+        recv = self.ser.read(size=size)
+        if len(recv) < size:
+            raise ResponseTimeout("timeout while communication via serial")
+        else:
+            return recv
+
+    def _execute(self, query):
+        self.lock.acquire()
+
+        try:
+            # clear buffers
+            self.ser.reset_output_buffer()
+            self.ser.reset_input_buffer()
+
+            query.set_sequence(self.SEQUENCE_COUNTER)
+            # send query
+            self.ser.write(query.compose())
+            # print(query.compose())
+
+            # flush write cache
+            self.ser.flush()
+
+            # initialize response and carriage return
+            cr = "\r".encode()
+            response_frame = b''
+            response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
+
+            # read until stop byte
+            while response_byte != cr:
+                response_frame += response_byte
+                response_byte = self._read(size=1)
+        finally:
+            # increment sequence counter
+            self._inc()
+            self.lock.release()
+
+        # strip source byte (! or #, but for a response always !)
+        response_frame = response_frame[1:]
+
+        # print(response_frame)
+        query.set_response(response_frame)
+
+        # did we encounter an error?
+        self._raise(query)
+
+        return query
+
+
+class MeCom(MeComSerial):
+    """
+    Deprecated. Use MeComSerial instead.
+    """
+    pass
+
+
 if __name__ == "__main__":
-    with MeCom("/dev/ttyUSB0") as mc:
+    with MeComSerial("/dev/ttyUSB0") as mc:
         # # which device are we talking to?
         address = mc.identify()
         status = mc.status()
