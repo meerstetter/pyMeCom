@@ -2,8 +2,11 @@
 
 """
 import logging
+import platform
+from time import time, sleep
 from mecom import MeCom, ResponseException, WrongChecksum
 from serial import SerialException
+from serial.serialutil import PortNotOpenError
 
 
 # default queries from command table below
@@ -27,6 +30,7 @@ COMMAND_TABLE = {
     "ramp temperature": [1011, "degC"],
 }
 
+MAX_COM = 256
 
 class MeerstetterTEC(object):
     """
@@ -36,17 +40,41 @@ class MeerstetterTEC(object):
     def _tearDown(self):
         self.session().stop()
 
-    def __init__(self, port="/dev/ttyUSB0", channel=1, queries=DEFAULT_QUERIES, *args, **kwars):
+    def __init__(self, port=None, scan_timeout=30, channel=1, queries=DEFAULT_QUERIES, *args, **kwars):
         assert channel in (1, 2)
         self.channel = channel
         self.port = port
+        self.scan_timeout = scan_timeout
         self.queries = queries
         self._session = None
         self._connect()
 
     def _connect(self):
         # open session
-        self._session = MeCom(serialport=self.port)
+        if self.port is not None:
+            self._session = MeCom(serialport=self.port)
+        else:
+            if platform.system() != "Windows":
+                start_index = 0
+                base_name = "/dev/ttyUSB"
+            else:
+                start_index = 1
+                base_name = "COM"
+
+            scan_start_time = time()
+            while True:
+                for i in range(start_index, MAX_COM + 1):
+                    try:
+                        self._session = MeCom(serialport=base_name + str(i))
+                        break
+                    except SerialException:
+                        pass
+                if self._session is not None or (time() - scan_start_time) >= self.scan_timeout:
+                    break
+                sleep(0.1) # 100 ms wait time between each scan attempt
+
+            if self._session is None:
+                 raise PortNotOpenError
         # get device address
         self.address = self._session.identify()
         logging.info("connected to {}".format(self.address))
