@@ -7,5 +7,5 @@ mecom.py contains the communication logic
 
 """
 
-from .mecom import MeCom, VR, VS, Parameter
+from .mecom import MeCom, MeComSerial, MeComTcp, VR, VS, Parameter
 from .exceptions import ResponseException, WrongChecksum

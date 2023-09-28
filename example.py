@@ -4,7 +4,7 @@
 import logging
 import platform
 from time import time, sleep
-from mecom import MeCom, ResponseException, WrongChecksum
+from mecom import MeComSerial, ResponseException, WrongChecksum
 from serial import SerialException
 from serial.serialutil import PortNotOpenError
 
@@ -52,7 +52,7 @@ class MeerstetterTEC(object):
     def _connect(self):
         # open session
         if self.port is not None:
-            self._session = MeCom(serialport=self.port)
+            self._session = MeComSerial(serialport=self.port)
         else:
             if platform.system() != "Windows":
                 start_index = 0
@@ -65,7 +65,7 @@ class MeerstetterTEC(object):
             while True:
                 for i in range(start_index, MAX_COM + 1):
                     try:
-                        self._session = MeCom(serialport=base_name + str(i))
+                        self._session = MeComSerial(serialport=base_name + str(i))
                         break
                     except SerialException:
                         pass

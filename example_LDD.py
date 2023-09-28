@@ -2,7 +2,7 @@
 
 """
 import logging
-from mecom import MeCom, ResponseException, WrongChecksum
+from mecom import MeComSerial, ResponseException, WrongChecksum
 from serial import SerialException
 
 
@@ -40,7 +40,7 @@ class MeerstetterLDD(object):
 
     def _connect(self):
         # open session
-        self._session = MeCom(serialport=self.port,metype = 'LDD')
+        self._session = MeComSerial(serialport=self.port,metype = 'LDD')
         # get device address
         self.address = self._session.identify()
         logging.info("connected to {}".format(self.address))

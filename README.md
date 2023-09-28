@@ -1,6 +1,6 @@
 # pyMeCom
 A python interface for the MeCom protocol by Meerstetter.
-This package was developed to control several TEC devices on a raspberry pi by connecting them via usb.
+This package was developed to control several TEC devices on a raspberry pi by connecting them via usb or via tcp.
 
 ## Requirements
 1. this code is only tested in Python 3 running in a linux OS
