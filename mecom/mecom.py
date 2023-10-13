@@ -10,7 +10,6 @@ import socket
 
 # more special pip packages
 from serial import Serial
-from PyCRC.CRCCCITT import CRCCCITT
 
 # from this package
 from .exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout, UnknownParameter, UnknownMeComType
@@ -115,6 +114,23 @@ class MeFrame(object):
         self.PAYLOAD = []
         self.CRC = None
 
+    def CalcCRC_CCITT(self, input_data):
+        """
+        Calculates the CRC-CCITT checksum of the given data
+        """
+        CRC = 0
+
+        for byte in input_data:
+            CRC ^= byte << 8
+            for _ in range(8):
+                if (CRC & 0x8000) != 0:
+                    CRC = (CRC << 1) ^ 0x1021 # CCITT CRC-16 Polynomial
+                else:
+                    CRC = CRC << 1
+                CRC &= 0xFFFF
+
+        return CRC
+
     def crc(self, in_crc=None):
         """
         Calculates the checksum of a given frame, if a checksum is given as parameter, the two are compared.
@@ -122,7 +138,7 @@ class MeFrame(object):
         :return: int
         """
         if self.CRC is None:
-            self.CRC = CRCCCITT().calculate(input_data=self.compose(part=True))
+            self.CRC = self.CalcCRC_CCITT(input_data=self.compose(part=True))
 
         # crc check
         # print(self.CRC)
