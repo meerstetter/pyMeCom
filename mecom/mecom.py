@@ -58,7 +58,7 @@ class Error(object):
 class ParameterList(object):
     """
     Contains a list of Parameter() for either TEC (metype = 'TEC') 
-    or LDD (metype = 'TEC') controller.
+    or LDD (metype = 'LDD') controller.
     Provides searching via id or name.
     :param error_dict: dict
     """
