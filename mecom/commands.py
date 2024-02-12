@@ -76,6 +76,62 @@ LDD_PARAMETERS = [
     {"id": 52102, "name": "Set Output States", "format": "INT32"},
     {"id": 52103, "name": "Read Input States", "format": "INT32"},
 ]
+
+
+#only common product parameters and monitor tab.
+#full list can be found the ldd-1321 protocol at: https://www.meerstetter.ch/customer-center/downloads/category/35-latest-communication-protocols
+LDD_1321_PARAMETERS = [
+    #Communication Device Address
+    {"id": 2051, "name": "Device Address", "format": "INT32"},
+    #Device Identification
+    {"id": 100, "name": "Device Type", "format": "INT32"},
+    {"id": 101, "name": "Hardware Version", "format": "INT32"},
+    {"id": 103, "name": "Firmware Version", "format": "INT32"},
+    {"id": 104, "name": "Device Status", "format": "INT32"},
+    {"id": 105, "name": "Error Number", "format": "INT32"},
+    {"id": 106, "name": "Error Instance", "format": "INT32"},
+    {"id": 107, "name": "Error Parameter", "format": "INT32"},
+    #Flash
+    {"id": 108, "name": "Save Data to Flash", "format": "INT32"},
+    {"id": 109, "name": "Flash Status", "format": "INT32"},
+    #LDD Output Monitoring
+    {"id": 1100, "name": "Actual Output Current", "format": "FLOAT32"},
+    {"id": 1101, "name": "Actual Output Voltage", "format": "FLOAT32"},
+    {"id": 1102, "name": "Actual Output Current Raw ADC Value", "format": "FLOAT32"},
+    {"id": 1104, "name": "Actual Anode Voltage", "format": "FLOAT32"},
+    {"id": 1105, "name": "Actual Cathode Voltage", "format": "FLOAT32"},
+    {"id": 1106, "name": "Nominal Anode Voltage", "format": "FLOAT32"},
+    #LDD Internal Parameters
+    {"id": 1402, "name": "Nominal Output Current (Ramp)", "format": "FLOAT32"},
+    {"id": 1404, "name": "Gate Voltage", "format": "FLOAT32"},
+    {"id": 1103, "name": "Raw DAC Value", "format": "INT32"},
+    #External Temperature Measurement x
+    {"id": 1200, "name": "Temperature", "format": "FLOAT32"},
+    {"id": 1201, "name": "Resistance", "format": "FLOAT32"},
+    {"id": 1202, "name": "Raw ADC Value", "format": "FLOAT32"},
+    #Analog Interfaces
+    {"id": 1502, "name": "Analog Voltage Input Raw ADC Value", "format": "INT32"},
+    {"id": 1500, "name": "Analog Voltage Input", "format": "FLOAT32"},
+    {"id": 1501, "name": "Photodiode Input", "format": "FLOAT32"},
+    #Light Measurement
+    {"id": 1600, "name": "Laser Power", "format": "FLOAT32"},
+    #Fan Controller x
+    {"id": 1210, "name": "Relative Cooling Power", "format": "FLOAT32"},
+    {"id": 1212, "name": "Actual Fan Speed", "format": "FLOAT32"},
+    {"id": 1211, "name": "Fan Nominal Speed", "format": "FLOAT32"},
+    {"id": 1213, "name": "Actual Fan PWM Level", "format": "FLOAT32"},
+    #Firmware and Hardware Versions
+    {"id": 1051, "name": "Firmware Build Number", "format": "INT32"},
+    {"id": 1054, "name": "Min Version for Firmware Downgrade", "format": "INT32"},
+    #Power Supplies and Temperature
+    {"id": 1060, "name": "Driver Input Voltage", "format": "FLOAT32"},
+    {"id": 1061, "name": "8V Internal Supply", "format": "FLOAT32"},
+    {"id": 1062, "name": "5V Internal Supply", "format": "FLOAT32"},
+    {"id": 1063, "name": "3.3V Internal Supply", "format": "FLOAT32"},
+    {"id": 1064, "name": "-3.3V Internal Supply", "format": "FLOAT32"},
+    {"id": 1065, "name": "Device Temperature", "format": "FLOAT32"},
+    {"id": 1066, "name": "Powerstage Temperature", "format": "FLOAT32"},
+]
     
 ERRORS = [
     {"code": 1, "symbol": "EER_CMD_NOT_AVAILABLE", "description": "Command not available"},
