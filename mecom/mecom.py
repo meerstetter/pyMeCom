@@ -13,7 +13,7 @@ from serial import Serial
 
 # from this package
 from .exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout, UnknownParameter, UnknownMeComType
-from .commands import TEC_PARAMETERS, LDD_PARAMETERS, ERRORS
+from .commands import TEC_PARAMETERS, LDD_PARAMETERS, LDD_1321_PARAMETERS, ERRORS
 
 
 class Parameter(object):
@@ -58,7 +58,7 @@ class Error(object):
 class ParameterList(object):
     """
     Contains a list of Parameter() for either TEC (metype = 'TEC') 
-    or LDD (metype = 'LDD') controller.
+    ,LDD (metype = 'LDD') controller or LDD-1321 (metype = 'LDD-1321') controller.
     Provides searching via id or name.
     :param error_dict: dict
     """
@@ -73,6 +73,9 @@ class ParameterList(object):
                 self._PARAMETERS.append(Parameter(parameter))
         elif metype =='LDD':
             for parameter in LDD_PARAMETERS:
+                self._PARAMETERS.append(Parameter(parameter))
+        elif metype =='LDD-1321':
+            for parameter in LDD_1321_PARAMETERS:
                 self._PARAMETERS.append(Parameter(parameter))
         else:
             raise UnknownMeComType
@@ -508,7 +511,7 @@ class MeComCommon:
         Initialize communication with serial port.
         :param serialport: str
         :param timeout: int
-        :param metype: str: either 'TEC' or 'LDD'
+        :param metype: str: either 'TEC', 'LDD' or 'LDD-1321'
         """
         self.lock = Lock()
 
@@ -796,7 +799,7 @@ class MeComTcp(MeComCommon):
         :param ipaddress: str
 :       :param ipport: int
         :param timeout: int
-        :param metype: str: either 'TEC' or 'LDD'
+        :param metype: str: either 'TEC', 'LDD' or 'LDD-1321'
         """
         # initialize network connection
         self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -877,7 +880,7 @@ class MeComSerial(MeComCommon):
         Initialize communication with serial port.
         :param serialport: str
         :param timeout: int
-        :param metype: str: either 'TEC' or 'LDD'
+        :param metype: str: either 'TEC', 'LDD' or 'LDD-1321'
         """
         # initialize serial connection
         self.ser = Serial(port=serialport, timeout=timeout, write_timeout=timeout, baudrate=baudrate)
