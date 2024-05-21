@@ -22,3 +22,6 @@ Furthermore, feel free to add more parameters to `mecom/commands.py`.
 
 ## Contribution
 This is by no means a polished software, contribution by submitting to this repository is appreciated.
+
+## Citation
+Cite as `Pomjaksilp, Suthep et al. (2024). pyMeCom 1.0. Zenodo. 10.5281/zenodo.11233757`
