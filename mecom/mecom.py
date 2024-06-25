@@ -821,7 +821,7 @@ class MeComTcp(MeComCommon):
 
     def _read(self, size):
         """
-        Read n=size bytes from TCP, if <n bytes are received.
+        Read n=size bytes from TCP, if <n bytes are received, raise a timeout.
         """
         recv = b""
         while (size - len(recv)) > 0:
