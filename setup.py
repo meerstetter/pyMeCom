@@ -2,12 +2,12 @@ from setuptools import setup
 
 setup(
     name='mecom',
-    version='0.1',
+    version='1.0',
     packages=['mecom'],
     install_requires = ['pySerial>=3.4'],
-    url='https://github.com/spomjaksilp/pyMeCom',
-    license='',
+    url='https://github.com/meerstetter/pyMeCom',
+    license='MIT',
     author='Suthep Pomjaksilp',
-    author_email='pomjaksi@physik.uni-kl.de',
+    author_email='pomjaksi@physik.uni-kl.de', # Please contact Meerstetter Engineering for support
     description='Python interface for Meerstetter TEC controller devices'
 )
