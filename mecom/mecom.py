@@ -274,6 +274,8 @@ class VR(Query):
                          address=address,
                          parameter_instance=parameter_instance)
         # initialize response
+        assert parameter.format in self._TYPES.keys()
+
         self._RESPONSE_FORMAT = parameter.format
 
 
