@@ -141,7 +141,7 @@ ERRORS = [
     {"code": 5, "symbol": "EER_PAR_NOT_AVAILABLE", "description": "Parameter is not available"},
     {"code": 6, "symbol": "EER_PAR_NOT_WRITABLE", "description": "Parameter is read only"},
     {"code": 7, "symbol": "EER_PAR_OUT_OF_RANGE", "description": "Value is out of range"},
-    {"code": 8, "symbol": "EER_PAR_INST_NOT_AVAILABLE", "description": "Parameter is read only"},
+    {"code": 8, "symbol": "EER_PAR_INST_NOT_AVAILABLE", "description": "Instance is not available"},
     {"code": 20, "symbol": "MEPORT_ERROR_SET_TIMEOUT", "description": "timeout reached, value cannot be set"},
     {"code": 21, "symbol": "MEPORT_ERROR_QUERY_TIMEOUT", "description": "timeout reached query cannot be served"},
 ]
