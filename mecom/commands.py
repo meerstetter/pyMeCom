@@ -82,6 +82,57 @@ LDD_112x_PARAMETERS = [
 #deprecated, use LDD_112x_PARAMETERS instead
 LDD_PARAMETERS = LDD_112x_PARAMETERS
 
+#monitor and common LDD-130x parameters
+#for a full list of parameters and their description, see the "LDD-130x Communication Protocol" document
+LDD_130x_PARAMETERS = [
+    #Communication Device Address
+    {"id": 2051, "name": "Device Address", "format": "INT32"},
+    #Device Identification
+    {"id": 100, "name": "Device Type", "format": "INT32"},
+    {"id": 101, "name": "Hardware Version", "format": "INT32"},
+    {"id": 103, "name": "Firmware Version", "format": "INT32"},
+    {"id": 104, "name": "Device Status", "format": "INT32"},
+    {"id": 105, "name": "Error Number", "format": "INT32"},
+    {"id": 106, "name": "Error Instance", "format": "INT32"},
+    {"id": 107, "name": "Error Parameter", "format": "INT32"},
+    #Flash
+    {"id": 108, "name": "Save Data to Flash", "format": "INT32"},
+    {"id": 109, "name": "Flash Status", "format": "INT32"},
+    #Output Stage Monitoring
+    {"id": 1100, "name": "Actual Output Current", "format": "FLOAT32"},
+    {"id": 1101, "name": "Actual Output Voltage", "format": "FLOAT32"},
+    #External Temperature Measurement x
+    {"id": 1200, "name": "Temperature", "format": "FLOAT32"},
+    {"id": 1201, "name": "Resistance", "format": "FLOAT32"},
+    {"id": 1202, "name": "Raw ADC Value", "format": "FLOAT32"},
+    #Power Stage Phase Monitoring
+    {"id": 1300, "name": "Phase Current x", "format": "FLOAT32"},
+    {"id": 1301, "name": "Phase Symmetrization Factor x", "format": "FLOAT32"},
+    #Internal Parameters
+    {"id": 1402, "name": "Nominal Output Current (Ramp)", "format": "FLOAT32"},
+    {"id": 1403, "name": "Output Level", "format": "FLOAT32"},
+    {"id": 1404, "name": "Calculated Input Current", "format": "FLOAT32"},
+    {"id": 1405, "name": "Calculated Output Current", "format": "FLOAT32"},
+    #Power Stage Temperature Monitoring
+    {"id": 1302, "name": "Temperature Phase x Buck/Boost", "format": "FLOAT32"},
+    #Analog Input
+    {"id": 1500, "name": "Analog Voltage Input", "format": "FLOAT32"},
+    {"id": 1501, "name": "Photodiode Input", "format": "FLOAT32"},
+    #Light Power Monitoring
+    {"id": 1600, "name": "Emitted Light Power", "format": "FLOAT32"},
+    {"id": 1601, "name": "Output Level", "format": "FLOAT32"},
+    #Firmware and Hardware Versions
+    {"id": 1051, "name": "Firmware Build Number", "format": "INT32"},
+    {"id": 1054, "name": "Min Version for Firmware Downgrade", "format": "INT32"},
+    #Power Supplies and Temperature
+    {"id": 1060, "name": "Driver Input Voltage", "format": "FLOAT32"},
+    {"id": 1061, "name": "12V Internal Supply", "format": "FLOAT32"},
+    {"id": 1062, "name": "5V Internal Supply", "format": "FLOAT32"},
+    {"id": 1063, "name": "3.3V Internal Supply", "format": "FLOAT32"},
+    {"id": 1064, "name": "-5V Internal Supply", "format": "FLOAT32"},
+    {"id": 1065, "name": "Device Temperature", "format": "FLOAT32"},
+]
+
 #monitor and common LDD-1321 parameters
 #for a full list of parameters and their description, see the "LDD-1321 Communication Protocol" document
 LDD_1321_PARAMETERS = [
