@@ -1,9 +1,10 @@
 """
-Definitions of command and error codes as stated in the "Mecom" protocol standard.
-https://www.meerstetter.ch/category/35-latest-communication-protocols
+Definitions of command and error codes as stated in the MeCom protocol specification.
+Documents can be found at https://www.meerstetter.ch/customer-center/downloads/category/35-latest-communication-protocols
 """
 
-
+#common TEC family parameters
+#for a full list of parameters and their description, see the "TEC-Family MeCom Communication Protocol" document
 TEC_PARAMETERS = [
     {"id": 104, "name": "Device Status", "format": "INT32"},
     {"id": 105, "name": "Error Number", "format": "INT32"},
@@ -50,8 +51,9 @@ TEC_PARAMETERS = [
 ]
 
 
-
-LDD_PARAMETERS = [
+#common LDD-112x family parameters
+#for a full list of parameters and their description, see the "LDD-Family MeCom Communication Protocol" document
+LDD_112x_PARAMETERS = [
     {"id": 104, "name": "Device Status", "format": "INT32"},
     {"id": 108, "name": "Save Data to Flash", "format": "INT32"},
     {"id": 109, "name": "Flash Status", "format": "INT32"},
@@ -77,9 +79,11 @@ LDD_PARAMETERS = [
     {"id": 52103, "name": "Read Input States", "format": "INT32"},
 ]
 
+#deprecated, use LDD_112x_PARAMETERS instead
+LDD_PARAMETERS = LDD_112x_PARAMETERS
 
-#only common product parameters and monitor tab.
-#full list can be found the ldd-1321 protocol at: https://www.meerstetter.ch/customer-center/downloads/category/35-latest-communication-protocols
+#monitor and common LDD-1321 parameters
+#for a full list of parameters and their description, see the "LDD-1321 Communication Protocol" document
 LDD_1321_PARAMETERS = [
     #Communication Device Address
     {"id": 2051, "name": "Device Address", "format": "INT32"},
@@ -132,7 +136,8 @@ LDD_1321_PARAMETERS = [
     {"id": 1065, "name": "Device Temperature", "format": "FLOAT32"},
     {"id": 1066, "name": "Powerstage Temperature", "format": "FLOAT32"},
 ]
-    
+
+#MeCom server error codes as specified in the "MeCom Protocol Specification" document
 ERRORS = [
     {"code": 1, "symbol": "EER_CMD_NOT_AVAILABLE", "description": "Command not available"},
     {"code": 2, "symbol": "EER_DEVICE_BUSY", "description": "Device is busy"},

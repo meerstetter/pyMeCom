@@ -22,9 +22,9 @@ COMMAND_TABLE = {
 }
 
 
-class MeerstetterLDD(object):
+class MeerstetterLDD_112x(object):
     """
-    Controlling TEC devices via serial.
+    Controlling LDD-112x devices via serial.
     """
 
     def _tearDown(self):
@@ -40,7 +40,7 @@ class MeerstetterLDD(object):
 
     def _connect(self):
         # open session
-        self._session = MeComSerial(serialport=self.port,metype = 'LDD')
+        self._session = MeComSerial(serialport=self.port,metype = 'LDD-112x')
         # get device address
         self.address = self._session.identify()
         logging.info("connected to {}".format(self.address))
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s:%(module)s:%(levelname)s:%(message)s")
 
     # initialize controller
-    mc = MeerstetterLDD()
+    mc = MeerstetterLDD_112x()
 
     # get the values from DEFAULT_QUERIES
     print(mc.get_data())

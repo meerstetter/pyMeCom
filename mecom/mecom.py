@@ -13,7 +13,7 @@ from serial import Serial
 
 # from this package
 from .exceptions import ResponseException, WrongResponseSequence, WrongChecksum, ResponseTimeout, UnknownParameter, UnknownMeComType
-from .commands import TEC_PARAMETERS, LDD_PARAMETERS, LDD_1321_PARAMETERS, ERRORS
+from .commands import TEC_PARAMETERS, LDD_PARAMETERS, LDD_112x_PARAMETERS, LDD_1321_PARAMETERS, ERRORS
 
 
 class Parameter(object):
@@ -57,9 +57,10 @@ class Error(object):
 
 class ParameterList(object):
     """
-    Contains a list of Parameter() for either TEC (metype = 'TEC') 
-    ,LDD (metype = 'LDD') controller or LDD-1321 (metype = 'LDD-1321') controller.
+    Contains a list of Parameter() for either TEC (metype = 'TEC'),
+    LDD-112x (metype = 'LDD-112x') controller or LDD-1321 (metype = 'LDD-1321') controller.
     Provides searching via id or name.
+    The deprecated metype = 'LDD' is equal to passing metype = 'LDD-112x'.
     :param error_dict: dict
     """
 
@@ -71,8 +72,8 @@ class ParameterList(object):
         if metype == 'TEC':
             for parameter in TEC_PARAMETERS:
                 self._PARAMETERS.append(Parameter(parameter))
-        elif metype =='LDD':
-            for parameter in LDD_PARAMETERS:
+        elif metype =='LDD-112x' or metype =='LDD':
+            for parameter in LDD_112x_PARAMETERS:
                 self._PARAMETERS.append(Parameter(parameter))
         elif metype =='LDD-1321':
             for parameter in LDD_1321_PARAMETERS:
@@ -513,7 +514,7 @@ class MeComCommon:
         Initialize communication with serial port.
         :param serialport: str
         :param timeout: int
-        :param metype: str: either 'TEC', 'LDD' or 'LDD-1321'
+        :param metype: str: either 'TEC', 'LDD-112x' or 'LDD-1321'
         """
         self.lock = Lock()
 
@@ -801,7 +802,7 @@ class MeComTcp(MeComCommon):
         :param ipaddress: str
 :       :param ipport: int
         :param timeout: int
-        :param metype: str: either 'TEC', 'LDD' or 'LDD-1321'
+        :param metype: str: either 'TEC', 'LDD-112x' or 'LDD-1321'
         """
         # initialize network connection
         self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -882,7 +883,7 @@ class MeComSerial(MeComCommon):
         Initialize communication with serial port.
         :param serialport: str
         :param timeout: int
-        :param metype: str: either 'TEC', 'LDD' or 'LDD-1321'
+        :param metype: str: either 'TEC', 'LDD-112x' or 'LDD-1321'
         """
         # initialize serial connection
         self.ser = Serial(port=serialport, timeout=timeout, write_timeout=timeout, baudrate=baudrate)
