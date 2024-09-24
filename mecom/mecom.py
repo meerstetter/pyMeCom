@@ -227,8 +227,8 @@ class Query(MeFrame):
         if parameter is not None:
             # UNIT16 4 hex digits
             self.PAYLOAD.append("{:04X}".format(parameter.id))
-        # UNIT8 2 hex digits
-        self.PAYLOAD.append("{:02X}".format(parameter_instance))
+            # UNIT8 2 hex digits
+            self.PAYLOAD.append("{:02X}".format(parameter_instance))
 
     def set_response(self, response_frame):
         """
@@ -313,9 +313,6 @@ class VS(Query):
         self.PAYLOAD.append(value)
 
         # no need to initialize response format, we want ACK
-        
-        
-
 
 class RS(Query):
     """
@@ -323,20 +320,35 @@ class RS(Query):
     """
     _PAYLOAD_START = 'RS'
 
-    def __init__(self, address=0, parameter_instance=1):
+    def __init__(self, address=0):
         """
         Create a query to set a parameter value.
         :param address: int
         :param parameter_instance: int
         """
         
-        # init header (equal for get and set queries)
-        super(RS, self).__init__(parameter=None,
-                         address=address,
-                         parameter_instance=parameter_instance)
+        # init header
+        super(RS, self).__init__(parameter=None, address=address)
 
         # no need to initialize response format, we want ACK
-        
+
+class SP(Query):
+    """
+    Implementing query to save all parameter values to flash.
+    """
+    _PAYLOAD_START = 'SP'
+
+    def __init__(self, address=0):
+        """
+        Create a query to set a parameter value.
+        :param address: int
+        """
+
+        # init header
+        super(SP, self).__init__(parameter=None, address=address)
+
+        # no need to initialize response format, we want ACK
+
 class IF(Query):
     """
     Implementing device info query.
@@ -728,7 +740,6 @@ class MeComCommon:
         return info.RESPONSE.PAYLOAD
 
 
-    
     # returns device address
     identify = partialmethod(get_parameter, parameter_name="Device Address")
     """
@@ -763,7 +774,7 @@ class MeComCommon:
 
         # return address and status
         return status_name
-
+    
     # enable or disable auto saving to flash
     enable_autosave = partialmethod(set_parameter, value=0, parameter_name="Save Data to Flash")
     disable_autosave = partialmethod(set_parameter, value=1, parameter_name="Save Data to Flash")
@@ -771,6 +782,10 @@ class MeComCommon:
     def write_to_flash(self, *args, **kwargs):
         """
         Write parameters to flash.
+        Note: This function only works on:
+         - TEC Controllers using a firmware < v6.00
+         - LDD-130x devices with a firmware < v2.00
+         - LDD-112x devices on any firmware
         :param args:
         :param kwargs:
         :return: bool
@@ -789,6 +804,16 @@ class MeComCommon:
 
         return True
 
+    def trigger_save_to_flash(self, *args, **kwargs):
+        """
+        Writes all parameter values to the flash of the device.
+        Note: This function only works on:
+         - TEC Controllers using a firmware >= v6.00
+         - LDD-130x devices with a firmware >= v2.00
+        """
+        rs = self._execute(SP(*args, **kwargs))
+        return type(rs.RESPONSE) == ACK
+
 
 class MeComTcp(MeComCommon):
     """
@@ -803,7 +828,7 @@ class MeComTcp(MeComCommon):
         """
         Initialize communication with TCP connection.
         :param ipaddress: str
-:       :param ipport: int
+        :param ipport: int
         :param timeout: int
         :param metype: str: either 'TEC', 'LDD-112x', 'LDD-130x' or 'LDD-1321'
         """
@@ -884,7 +909,7 @@ class MeComSerial(MeComCommon):
     def __init__(self, serialport="/dev/ttyUSB0", timeout=1, baudrate=57600, metype='TEC'):
         """
         Initialize communication with serial port.
-        :param serialport: str
+        :param serialport: str: Linux example: '/dev/ttyUSB0', Windows example: 'COM1'
         :param timeout: int
         :param metype: str: either 'TEC', 'LDD-112x', 'LDD-130x' or 'LDD-1321'
         """
@@ -1004,5 +1029,11 @@ if __name__ == "__main__":
         # set target temperature to 21C
         # success = mc.set_parameter(value=20.0, parameter_id=3000)
         # print(success)
+
+        # save all parameter changes in the flash
+        # mc.trigger_save_to_flash()
+
+        # reset the device
+        # mc.reset_device()
 
         print("leaving with-statement, connection will be closed")

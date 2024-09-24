@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='mecom',
-    version='1.0',
+    version='1.1',
     packages=['mecom'],
     install_requires = ['pySerial>=3.4'],
     url='https://github.com/meerstetter/pyMeCom',
