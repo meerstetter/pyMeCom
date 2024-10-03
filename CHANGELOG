@@ -1,0 +1,7 @@
+pyMeCom 1.1 [2024-10-03]:
+- Added SP command
+- Removed volatile and duplicate parameters which are no longer available in TEC firmware versions >= 6.0
+- Protocol correctness: queries not targeted at parameters no longer send a parameter instance
+
+pyMeCom 1.0 [2024-02-12]:
+- Initial versioned release

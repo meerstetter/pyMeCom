@@ -23,7 +23,7 @@ DEFAULT_QUERIES = [
 COMMAND_TABLE = {
     "loop status": [1200, ""],
     "object temperature": [1000, "degC"],
-    "target object temperature": [1010, "degC"],
+    "target object temperature": [3000, "degC"],
     "output current": [1020, "A"],
     "output voltage": [1021, "V"],
     "sink temperature": [1001, "degC"],
