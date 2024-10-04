@@ -786,6 +786,9 @@ class MeComCommon:
          - TEC Controllers using a firmware < v6.00
          - LDD-130x devices with a firmware < v2.00
          - LDD-112x devices on any firmware
+        for devices not listed here, refer to the device documentation
+        and check whether the old automatic flash saving mechanism
+        is used on your device
         :param args:
         :param kwargs:
         :return: bool
@@ -810,6 +813,10 @@ class MeComCommon:
         Note: This function only works on:
          - TEC Controllers using a firmware >= v6.00
          - LDD-130x devices with a firmware >= v2.00
+         - LDD-1321 devices on any firmware
+        for devices not listed here, refer to the device documentation
+        and check whether the new explicit flash saving mechanism
+        is used on your device
         """
         rs = self._execute(SP(*args, **kwargs))
         return type(rs.RESPONSE) == ACK

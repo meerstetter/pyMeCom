@@ -1,7 +1,10 @@
-pyMeCom 1.1 [2024-10-03]:
+pyMeCom 1.1 [2024-10-04]:
 - Added SP command
 - Removed volatile and duplicate parameters which are no longer available in TEC firmware versions >= 6.0
 - Protocol correctness: queries not targeted at parameters no longer send a parameter instance
+- Added LDD-130x parameters in commands.py
+- LDD_PARAMETERS has been renamed to LDD_112x_PARAMETERS, the old name is still available for backwards compatability
+- Amended the error list
 
 pyMeCom 1.0 [2024-02-12]:
 - Initial versioned release
