@@ -7,6 +7,7 @@ from functools import partialmethod
 import time
 from threading import Lock
 import socket
+import select
 
 # more special pip packages
 from serial import Serial
@@ -526,9 +527,7 @@ class MeComCommon:
 
     def __init__(self, metype='TEC'):
         """
-        Initialize communication with serial port.
-        :param serialport: str
-        :param timeout: int
+        Initialize communication.
         :param metype: str: either 'TEC', 'LDD-112x', 'LDD-130x' or 'LDD-1321'
         """
         self.lock = Lock()
@@ -824,24 +823,33 @@ class MeComCommon:
 
 class MeComTcp(MeComCommon):
     """
-    Main class (TCP). Import this one:
-    from qao.devices.mecom import MeComTCP
-
-    For a usage example see __main__
+    Main class (TCP).
     """
     SEQUENCE_COUNTER = 1
 
-    def __init__(self, ipaddress, ipport=50000, metype='TEC'):
+    def __init__(self, ipaddress, ipport=50000, timeout=10, discardwait=None, metype='TEC'):
         """
-        Initialize communication with TCP connection.
+        Initialize a TCP connection. Use the discardwait parameter for devices which send a message on connect, like the LTR-1200.
         :param ipaddress: str
         :param ipport: int
         :param timeout: int
+        :param discardwait: int: waits at most for the specified amount of seconds for initial data to arrive, then discards it
         :param metype: str: either 'TEC', 'LDD-112x', 'LDD-130x' or 'LDD-1321'
         """
         # initialize network connection
         self.tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp.settimeout(timeout)
         self.tcp.connect((ipaddress, ipport))
+
+        # if configured, discard any data received right after connecting
+        if discardwait is not None:
+            # wait for data to arrive
+            readable, _, _ = select.select([self.tcp], [], [], discardwait)
+
+            # read from the socket until the buffer is empty
+            while self.tcp in readable:
+                self.tcp.recv(1024)
+                readable, _, _ = select.select([self.tcp], [], [], 0)
 
         # initialize parameters
         self.PARAMETERS = ParameterList(metype)
