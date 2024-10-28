@@ -261,6 +261,17 @@ class Query(MeFrame):
             raise WrongResponseSequence
 
 
+class EmptyResponse(MeFrame):
+    """
+    No response.
+    """
+    
+    def __init__(self):
+        """
+        Creates an instance of an empty response.
+        """
+        super(EmptyResponse, self).__init__()
+
 class VR(Query):
     """
     Implementing query to get a parameter from the device (?VR).
@@ -886,25 +897,29 @@ class MeComTcp(MeComCommon):
             self.tcp.sendall(query.compose())
             # print(query.compose())
 
-            # initialize response and carriage return
-            cr = "\r".encode()
-            response_frame = b''
-            response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
+            if query.ADDRESS != 255:
+                # initialize response and carriage return
+                cr = "\r".encode()
+                response_frame = b''
+                response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
 
-            # read until stop byte
-            while response_byte != cr:
-                response_frame += response_byte
-                response_byte = self._read(size=1)
+                # read until stop byte
+                while response_byte != cr:
+                    response_frame += response_byte
+                    response_byte = self._read(size=1)
         finally:
             # increment sequence counter
             self._inc()
             self.lock.release()
 
-        # strip source byte (! or #, but for a response always !)
-        response_frame = response_frame[1:]
+        if query.ADDRESS != 255:
+            # strip source byte (! or #, but for a response always !)
+            response_frame = response_frame[1:]
 
-        # print(response_frame)
-        query.set_response(response_frame)
+            # print(response_frame)
+            query.set_response(response_frame)
+        else:
+            query.RESPONSE = EmptyResponse()
 
         # did we encounter an error?
         self._raise(query)
@@ -976,25 +991,29 @@ class MeComSerial(MeComCommon):
             # flush write cache
             self.ser.flush()
 
-            # initialize response and carriage return
-            cr = "\r".encode()
-            response_frame = b''
-            response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
+            if query.ADDRESS != 255:
+                # initialize response and carriage return
+                cr = "\r".encode()
+                response_frame = b''
+                response_byte = self._read(size=1)  # read one byte at a time, timeout is set on instance level
 
-            # read until stop byte
-            while response_byte != cr:
-                response_frame += response_byte
-                response_byte = self._read(size=1)
+                # read until stop byte
+                while response_byte != cr:
+                    response_frame += response_byte
+                    response_byte = self._read(size=1)
         finally:
             # increment sequence counter
             self._inc()
             self.lock.release()
 
-        # strip source byte (! or #, but for a response always !)
-        response_frame = response_frame[1:]
+        if query.ADDRESS != 255:
+            # strip source byte (! or #, but for a response always !)
+            response_frame = response_frame[1:]
 
-        # print(response_frame)
-        query.set_response(response_frame)
+            # print(response_frame)
+            query.set_response(response_frame)
+        else:
+            query.RESPONSE = EmptyResponse()
 
         # did we encounter an error?
         self._raise(query)
