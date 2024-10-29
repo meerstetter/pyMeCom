@@ -117,7 +117,7 @@ class MeerstetterTEC(object):
         """
         value, description = (1, "on") if enable else (0, "off")
         logging.info("set loop for channel {} to {}".format(self.channel, description))
-        return self.session().set_parameter(value=value, parameter_name="Status", address=self.address, parameter_instance=self.channel)
+        return self.session().set_parameter(value=value, parameter_name="Output Enable Status", address=self.address, parameter_instance=self.channel)
 
     def enable(self):
         return self._set_enable(True)
