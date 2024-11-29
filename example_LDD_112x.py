@@ -31,7 +31,7 @@ class MeerstetterLDD_112x(object):
         self.session().stop()
 
     def __init__(self, port="COM6", channel=1, queries=DEFAULT_QUERIES, *args, **kwars):
-        assert channel in (1, 2)
+        assert channel is 1
         self.channel = channel
         self.port = port
         self.queries = queries
