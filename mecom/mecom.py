@@ -862,9 +862,6 @@ class MeComTcp(MeComCommon):
                 self.tcp.recv(1024)
                 readable, _, _ = select.select([self.tcp], [], [], 0)
 
-        # initialize parameters
-        self.PARAMETERS = ParameterList(metype)
-
         super().__init__(metype)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -949,9 +946,6 @@ class MeComSerial(MeComCommon):
         # start protocol thread
         # self.protocol = ReaderThread(serial_instance=self.ser, protocol_factory=MePacket)
         # self.receiver = self.protocol.__enter__()
-
-        # initialize parameters
-        self.PARAMETERS = ParameterList(metype)
 
         super().__init__(metype)
 
