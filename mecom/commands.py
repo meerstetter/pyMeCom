@@ -27,6 +27,7 @@ TEC_PARAMETERS = [
     {"id": 2000, "name": "Output Stage Input Selection", "format": "INT32"},
     {"id": 2010, "name": "Output Enable Status", "format": "INT32"},
     {"id": 2020, "name": "Set Current", "format": "FLOAT32"},
+    {"id": 2021, "name": "Set Voltage", "format": "FLOAT32"},
     {"id": 2030, "name": "Current Limitation", "format": "FLOAT32"},
     {"id": 2031, "name": "Voltage Limitation", "format": "FLOAT32"},
     {"id": 2032, "name": "Current Error Threshold", "format": "FLOAT32"},
