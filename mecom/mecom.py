@@ -1023,45 +1023,80 @@ class MeCom(MeComSerial):
 
 
 if __name__ == "__main__":
+    import argparse
+    import re
+
+    def setParamStr(mc, paramStr):
+        m=re.match("\s*(.*?)\s*=\s*(.*?)\s*$", paramStr)
+        varStr=m.group(1)
+        valStr=m.group(2)
+        pl=ParameterList()
+        var=pl.get_by_name(varStr)
+        if var.format=="FLOAT32":
+            val=float(valStr)
+        elif var.format=="INT32":
+            val=int(valStr)
+        mc.set_parameter(value=val, parameter_name=varStr)
+
+    def getParamStr(mc, varStr):
+        for vs in varStr.split(','):
+            try:
+                val=mc.get_parameter(parameter_name=vs)
+                print(f'{vs} = {val}')
+            except UnknownParameter as inst:
+                print(f'UnknownParameter: "{vs}"')
+
+
     with MeComSerial("/dev/ttyUSB0") as mc:
         # # which device are we talking to?
         address = mc.identify()
         status = mc.status()
         print("connected to device: {}, status: {}".format(address, status))
 
-        # get object temperature
-        temp = mc.get_parameter(parameter_name="Object Temperature", address=address)
-        print("query for object temperature, measured temperature {}C".format(temp))
+        parser=argparse.ArgumentParser(prog='mecom command line example interface')
+        parser.add_argument('-s', '--set', help='set parameter. Example: --set "Target Object Temperature=23" (don\'t forget the quotes)')
+        parser.add_argument('-g', '--get', help='get parameter. Example: --get "Object Temperature"')
 
-        # is the loop stable?
-        stable_id = mc.get_parameter(parameter_name="Temperature is Stable", address=address)
-        if stable_id == 0:
-            stable = "temperature regulation is not active"
-        elif stable_id == 1:
-            stable = "is not stable"
-        elif stable_id == 2:
-            stable = "is stable"
+        args=parser.parse_args()
+        if args.set is not None:
+            setParamStr(mc, args.set)
+        elif args.get is not None:
+            getParamStr(mc, args.get)
         else:
-            stable = "state is unknown"
-        print("query for loop stability, loop {}".format(stable))
+            # get object temperature
+            temp = mc.get_parameter(parameter_name="Object Temperature", address=address)
+            print("query for object temperature, measured temperature {}C".format(temp))
 
-        # # setting a new device address and get again
-        # new_address = 6
-        # value_set = mc.set_parameter(value=new_address, parameter_name="Device Address")
-        # print("setting device address to {}".format(value_set))
-        #
-        # # get device address again
-        # address = mc.identify()
-        # print("connected to device: {}".format(address))
+            # is the loop stable?
+            stable_id = mc.get_parameter(parameter_name="Temperature is Stable", address=address)
+            if stable_id == 0:
+                stable = "temperature regulation is not active"
+            elif stable_id == 1:
+                stable = "is not stable"
+            elif stable_id == 2:
+                stable = "is stable"
+            else:
+                stable = "state is unknown"
+            print("query for loop stability, loop {}".format(stable))
 
-        # set target temperature to 21C
-        # success = mc.set_parameter(value=20.0, parameter_id=3000)
-        # print(success)
+            # # setting a new device address and get again
+            # new_address = 6
+            # value_set = mc.set_parameter(value=new_address, parameter_name="Device Address")
+            # print("setting device address to {}".format(value_set))
+            #
+            # # get device address again
+            # address = mc.identify()
+            # print("connected to device: {}".format(address))
 
-        # save all parameter changes in the flash
-        # mc.trigger_save_to_flash()
+            # set target temperature to 21C
+            # success = mc.set_parameter(value=20.0, parameter_id=3000)
+            # print(success)
 
-        # reset the device
-        # mc.reset_device()
+            # save all parameter changes in the flash
+            # mc.trigger_save_to_flash()
 
-        print("leaving with-statement, connection will be closed")
+            # reset the device
+            # mc.reset_device()
+
+            print("leaving with-statement, connection will be closed")
+
