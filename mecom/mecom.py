@@ -1024,10 +1024,11 @@ class MeCom(MeComSerial):
 
 if __name__ == "__main__":
     import argparse
-    import re
 
     def setParamStr(mc, paramStr):
-        m=re.match("\s*(.*?)\s*=\s*(.*?)\s*$", paramStr)
+        m=paramStr.split('=', 1)
+        varStr=m[0].strip()
+        valStr=m[1].strip()
         varStr=m.group(1)
         valStr=m.group(2)
         pl=ParameterList()
