@@ -6,24 +6,49 @@ Documents can be found at https://www.meerstetter.ch/customer-center/downloads/c
 #common TEC family parameters
 #for a full list of parameters and their description, see the "TEC-Family MeCom Communication Protocol" document
 TEC_PARAMETERS = [
+    {"id": 100, "name": "Device Type", "format": "INT32"},
+    {"id": 101, "name": "Hardware Version", "format": "INT32"},
+    {"id": 103, "name": "Firmware Version", "format": "INT32"},
     {"id": 104, "name": "Device Status", "format": "INT32"},
     {"id": 105, "name": "Error Number", "format": "INT32"},
+    {"id": 106, "name": "Error Instance", "format": "INT32"},
+    {"id": 107, "name": "Error Parameter", "format": "INT32"},
+    {"id": 109, "name": "Parameter System: Flash Status", "format": "INT32"},
     {"id": 108, "name": "Save Data to Flash", "format": "INT32"},
     {"id": 109, "name": "Flash Status", "format": "INT32"},
+    {"id": 110, "name": "Error Text", "format": "LATIN1"},
+    {"id": 111, "name": "Device Reset", "format": "INT32"},
 
     {"id": 1000, "name": "Object Temperature", "format": "FLOAT32"},
     {"id": 1001, "name": "Sink Temperature", "format": "FLOAT32"},
-    {"id": 3000, "name": "Target Object Temperature", "format": "FLOAT32"},
     {"id": 1011, "name": "Ramp Object Temperature", "format": "FLOAT32"},
     {"id": 1020, "name": "Actual Output Current", "format": "FLOAT32"},
     {"id": 1021, "name": "Actual Output Voltage", "format": "FLOAT32"},
+
+    #The names for these values differs from that in TEC Con Com Protocol 5136AR,
+    #as the name 'Resistance' also appears in 3040.
+    {"id": 1040, "name": "HR ADC Raw Value", "format": "FLOAT32"},
+    {"id": 1041, "name": "LR ADC Raw Value", "format": "FLOAT32"},
+    {"id": 1042, "name": "HR ADC Resistance", "format": "FLOAT32"},
+    {"id": 1043, "name": "LR ADC Resistance", "format": "FLOAT32"},
+    {"id": 1046, "name": "HR ADC Differential Voltage", "format": "FLOAT32"},
+
+
+    {"id": 1051, "name": "Firmware Build Number", "format": "INT32"},
+    {"id": 1054, "name": "Min Version for Firmware Downgrade", "format": "INT32"},
+
+
+    {"id": 1065, "name": "Unique ID", "format": "LATIN1"},
+    {"id": 1060, "name": "Driver Input Voltage", "format": "FLOAT32"},
+    {"id": 1061, "name": "Medium Internal Supply", "format": "FLOAT32"},
+    {"id": 1071, "name": "Actual Output Limit", "format": "FLOAT32"},
+    {"id": 1073, "name": "Final Output Limitation", "format": "FLOAT32"},
+
     {"id": 1102, "name": "Actual Fan Speed", "format": "FLOAT32"},
+    {"id": 1111, "name": "Maximum Output Current", "format": "FLOAT32"},
+
+
     {"id": 1200, "name": "Temperature is Stable", "format": "INT32"},
-    {"id": 3002, "name": "Proximity Width", "format": "FLOAT32"},
-    {"id": 3003, "name": "Coarse Temp Ramp", "format": "FLOAT32"},
-    {"id": 3010, "name": "Kp", "format": "FLOAT32"},
-    {"id": 3011, "name": "Ti", "format": "FLOAT32"},
-    {"id": 3012, "name": "Td", "format": "FLOAT32"},
 
     {"id": 2000, "name": "Output Stage Input Selection", "format": "INT32"},
     {"id": 2010, "name": "Output Enable Status", "format": "INT32"},
@@ -33,7 +58,39 @@ TEC_PARAMETERS = [
     {"id": 2031, "name": "Voltage Limitation", "format": "FLOAT32"},
     {"id": 2032, "name": "Current Error Threshold", "format": "FLOAT32"},
     {"id": 2033, "name": "Voltage Error Threshold", "format": "FLOAT32"},
+    {"id": 2040, "name": "General Operating Mode", "format": "INT32"},
     {"id": 2051, "name": "Device Address", "format": "INT32"},
+
+    {"id": 3000, "name": "Target Object Temperature", "format": "FLOAT32"},
+    {"id": 3002, "name": "Proximity Width", "format": "FLOAT32"},
+    {"id": 3003, "name": "Coarse Temp Ramp", "format": "FLOAT32"},
+    {"id": 3010, "name": "Kp", "format": "FLOAT32"},
+    {"id": 3011, "name": "Ti", "format": "FLOAT32"},
+    {"id": 3012, "name": "Td", "format": "FLOAT32"},
+    {"id": 3013, "name": "D Part Damping PT1", "format": "FLOAT32"},
+    {"id": 3020, "name": "Mode", "format": "INT32"},
+    {"id": 3034, "name": "Polarity", "format": "INT32"},
+
+    #The name 'Resistor' appears twice in 5136AR (also for 1042) -so added 'Load'
+    {"id": 3040, "name": "Load Resistance", "format": "FLOAT32"},
+    {"id": 3041, "name": "Maximum Current", "format": "FLOAT32"},
+
+    {"id": 3050, "name": "Lower Boundary", "format": "FLOAT32"},
+    {"id": 3051, "name": "Upper Boundary", "format": "FLOAT32"},
+
+    {"id": 4034, "name": "Sensor Type", "format": "INT32"},
+
+    {"id": 6000, "name": "PGA Gain", "format": "INT32"},
+    {"id": 6007, "name": "PGA Bypass", "format": "INT32"},
+    {"id": 6001, "name": "ADC Current Source", "format": "INT32"},
+    {"id": 6008, "name": "ADC Current Source 2 Out", "format": "INT32"},
+    {"id": 6009, "name": "Measurement Type", "format": "INT32"},
+    {"id": 6002, "name": "ADC Rs", "format": "FLOAT32"},
+    {"id": 6006, "name": "ADC Rp", "format": "FLOAT32"},
+    {"id": 6020, "name": "Display Type", "format": "INT32"},
+    {"id": 6021, "name": "Periodic Display Re-Init", "format": "INT32"},
+    {"id": 6023, "name": "Display Line 1-4 Alternative Mode", "format": "INT32"},
+
 
     {"id": 6100, "name": "GPIO Function", "format": "INT32"},
     {"id": 6101, "name": "GPIO Level Assignment", "format": "INT32"},
@@ -45,7 +102,9 @@ TEC_PARAMETERS = [
     {"id": 6221, "name": "Fan 100 Speed", "format": "INT32"},
 
     {"id": 6300, "name": "Object Source Selection", "format": "INT32"},
+    {"id": 6301, "name": "Sampling Frequency", "format": "INT32"},
     {"id": 6302, "name": "Observe Mode", "format": "INT32"},
+    {"id": 6304, "name": "Sink Source Selection", "format": "INT32"},
     {"id": 6310, "name": "Delay till Restart", "format": "FLOAT32"},
     {"id": 52100, "name": "Enable Function", "format": "INT32"},
     {"id": 52101, "name": "Set Output to Push-Pull", "format": "INT32"},

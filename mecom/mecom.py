@@ -112,7 +112,11 @@ class MeFrame(object):
     """
     Basis structure of a MeCom frame as defined in the specs.
     """
-    _TYPES = {"UINT8": "!H", "UINT16": "!L", "INT32": "!i", "FLOAT32": "!f"}
+    _TYPES = {"UINT8":   "!H",
+              "UINT16":  "!L",
+              "INT32":   "!i",
+              "FLOAT32": "!f",
+              "LATIN1":  "!s"}
     _SOURCE = ""
     _EOL = "\r"  # carriage return
 
@@ -225,6 +229,7 @@ class Query(MeFrame):
         self._RESPONSE_FORMAT = None
 
         self.ADDRESS = address
+        self.dataformat=parameter.format
         if parameter is not None:
             # UNIT16 4 hex digits
             self.PAYLOAD.append("{:04X}".format(parameter.id))
@@ -252,7 +257,10 @@ class Query(MeFrame):
             self.RESPONSE.decompose(response_frame)
         # nope it's a response to a parameter query
         else:
-            self.RESPONSE = VRResponse(self._RESPONSE_FORMAT)
+            if self.dataformat == 'LATIN1':
+                self.RESPONSE = VBResponse(self._RESPONSE_FORMAT)
+            else:
+                self.RESPONSE = VRResponse(self._RESPONSE_FORMAT)
             # if the checksum is wrong, this statement raises
             self.RESPONSE.decompose(response_frame)
 
@@ -265,7 +273,7 @@ class EmptyResponse(MeFrame):
     """
     No response.
     """
-    
+
     def __init__(self):
         """
         Creates an instance of an empty response.
@@ -294,6 +302,32 @@ class VR(Query):
 
         self._RESPONSE_FORMAT = parameter.format
 
+class VB(Query):
+    """
+    Implementing query to get a parameter from the device (?VR).
+    """
+    _PAYLOAD_START = "?VB"
+
+    def __init__(self, parameter, address=0, parameter_instance=1, start_position=0, max_nread=255):
+        """
+        Create a query to get a parameter value.
+        :param parameter: Parameter
+        :param address: int
+        :param parameter_instance: int
+        """
+        # init header (equal for get and set queries
+        super(VB, self).__init__(parameter=parameter,
+                                 address=address,
+                                 parameter_instance=parameter_instance)
+        # initialize response
+        assert parameter.format in self._TYPES.keys()
+
+        self.PAYLOAD.append("{:08X}".format(start_position))
+        self.PAYLOAD.append("{:04X}".format(max_nread))
+
+        self._RESPONSE_FORMAT = parameter.format
+        self.expected_response=VBResponse
+
 
 class VS(Query):
     """
@@ -318,7 +352,7 @@ class VS(Query):
         # cast the value parameter to the correct type
         conversions = {'FLOAT32': float, 'INT32': int}
         assert parameter.format in conversions.keys()
-        
+
         value=conversions[parameter.format](value)
 
         # the set value
@@ -338,7 +372,7 @@ class RS(Query):
         :param address: int
         :param parameter_instance: int
         """
-        
+
         # init header
         super(RS, self).__init__(parameter=None, address=address)
 
@@ -373,7 +407,7 @@ class IF(Query):
         :param address: int
         :param parameter_instance: int
         """
-        
+
         # init header (equal for get and set queries)
         super(IF, self).__init__(parameter=None,
                          address=address,
@@ -411,13 +445,43 @@ class VRResponse(MeFrame):
         self.PAYLOAD = [unpack(self._RESPONSE_FORMAT, bytes.fromhex(frame[7:15]))[0]]  # convert hex to float or int
         self.crc(int(frame[-4:], 16))  # sets crc or raises
 
+class VBResponse(MeFrame):
+    """
+    Frame for the device response to a VR() query.
+    """
+    _SOURCE = "!"
+    _RESPONSE_FORMAT = None
+
+    def __init__(self, response_format):
+        """
+        The format of the response is given via VR.set_response()
+        :param response_format: str
+        """
+        super(VBResponse, self).__init__()
+        self._RESPONSE_FORMAT = self._TYPES[response_format]
+
+    def decompose(self, frame_bytes):
+        """
+        Takes bytes as input and builds the instance.
+        :param frame_bytes: bytes
+        :return:
+        """
+        assert self._RESPONSE_FORMAT is not None
+        frame_bytes = self._SOURCE.encode() + frame_bytes
+        self._decompose_header(frame_bytes)
+
+        frame = frame_bytes.decode()
+        self.PAYLOAD = [bytes.fromhex(frame[11:-4]).decode('ascii')]
+
+        #CRC error???
+        #self.crc(int(frame[-4:], 16))  # sets crc or raises
 
 class ACK(MeFrame):
     """
     ACK command sent by the device.
     """
     _SOURCE = "!"
-    
+
     def decompose(self, frame_bytes):
         """
         Takes bytes as input and builds the instance.
@@ -426,10 +490,10 @@ class ACK(MeFrame):
         """
         frame_bytes = self._SOURCE.encode() + frame_bytes
         self._decompose_header(frame_bytes)
-        
+
         frame = frame_bytes.decode()
         self.CRC = int(frame[-4:], 16)
-        
+
 
 class IFResponse(MeFrame):
     """
@@ -560,7 +624,7 @@ class MeComCommon:
 
     def _inc(self):
         self.SEQUENCE_COUNTER += 1
-        # sequence in controller is int16 and overflows 
+        # sequence in controller is int16 and overflows
         self.SEQUENCE_COUNTER = self.SEQUENCE_COUNTER % (2**16)
 
     @staticmethod
@@ -588,13 +652,14 @@ class MeComCommon:
         # search in DataFrame returns a dict
         parameter = self._find_parameter(parameter_name, parameter_id)
 
-        # execute query
-        vr = self._execute(VR(parameter=parameter, *args, **kwargs))
-
-        # print(vr.PAYLOAD)
-        # print(vr.RESPONSE.PAYLOAD)
-        # return the query with response
-        return vr
+        if parameter.format == "LATIN1":
+            # execute query
+            vb = self._execute(VB(parameter=parameter, start_position=0, max_nread=1023, *args, **kwargs))
+            return vb
+        else:
+            # execute query
+            vr = self._execute(VR(parameter=parameter, *args, **kwargs))
+            return vr
 
     def _get_raw(self, parameter_id, parameter_format, *args, **kwargs):
         """
@@ -702,7 +767,7 @@ class MeComCommon:
         # check if value setting has succeeded
         #
         # Not necessary as we get an acknowledge response or Value is out of range
-        # exception when an invalid value was passed. 
+        # exception when an invalid value was passed.
         # current implementation also often fails due to rounding, e.g. setting 1.0
         # but returning 0.999755859375 when performing a self.get_parameter
         # value_set = self.get_parameter(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
@@ -727,21 +792,21 @@ class MeComCommon:
         # check if value setting has succeeded
         #
         # Not necessary as we get an acknowledge response or Value is out of range
-        # exception when an invalid value was passed. 
+        # exception when an invalid value was passed.
         # current implementation also often fails due to rounding, e.g. setting 1.0
         # but returning 0.999755859375 when performing a self.get_parameter
         # value_set = self.get_parameter(parameter_id=parameter_id, parameter_name=parameter_name, *args, **kwargs)
 
         # return True if we got an ACK
         return type(vs.RESPONSE) == ACK
-    
+
     def reset_device(self,*args, **kwargs):
         """
         Resets the device after an error has occured
         """
         rs = self._execute(RS(*args, **kwargs))
         return type(rs.RESPONSE) == ACK
-    
+
     def info(self,*args, **kwargs):
         """
         Resets the device after an error has occured
@@ -784,7 +849,7 @@ class MeComCommon:
 
         # return address and status
         return status_name
-    
+
     # enable or disable auto saving to flash
     enable_autosave = partialmethod(set_parameter, value=0, parameter_name="Save Data to Flash")
     disable_autosave = partialmethod(set_parameter, value=1, parameter_name="Save Data to Flash")
@@ -1025,7 +1090,7 @@ class MeCom(MeComSerial):
 if __name__ == "__main__":
     import argparse
 
-    def setParamStr(mc, paramStr):
+    def setParamStr(mc, paramStr, *args, **kwargs):
         m=paramStr.split('=', 1)
         varStr=m[0].strip()
         valStr=m[1].strip()
@@ -1035,15 +1100,21 @@ if __name__ == "__main__":
             val=float(valStr)
         elif var.format=="INT32":
             val=int(valStr)
-        mc.set_parameter(value=val, parameter_name=varStr)
+        mc.set_parameter(value=val, parameter_name=varStr, *args, **kwargs)
 
-    def getParamStr(mc, varStr):
+    def getParamStr(mc, varStr, *args, **kwargs):
+        pl=ParameterList()
         for vs in varStr.split(','):
             try:
-                val=mc.get_parameter(parameter_name=vs)
-                print(f'{vs} = {val}')
-            except UnknownParameter as inst:
-                print(f'UnknownParameter: "{vs}"')
+                parameter=pl.get_by_id(int(vs))
+            except ValueError:
+                try:
+                    parameter=pl.get_by_name(vs)
+                except UnknownParameter:
+                    print(f'Unknown parameter: "{vs}"')
+                    return None
+            val=mc.get_parameter(parameter_id=parameter.id, *args, **kwargs)
+            print(f'{parameter.id:4d}: {parameter.name:20s} = {val}')
 
 
     with MeComSerial("/dev/ttyUSB0") as mc:
@@ -1055,19 +1126,23 @@ if __name__ == "__main__":
         parser=argparse.ArgumentParser(prog='mecom command line example interface')
         parser.add_argument('-s', '--set', help='set parameter. Example: --set "Target Object Temperature=23" (don\'t forget the quotes)')
         parser.add_argument('-g', '--get', help='get parameter. Example: --get "Object Temperature"')
+        parser.add_argument('--address', type=int, default=address, help='address of the controller')
+        parser.add_argument('--instance', type=int, default=1, help='Parameter Instance. If the controller has multiple sensors/outputs for a parameter, use --instance to address them.')
 
         args=parser.parse_args()
         if args.set is not None:
-            setParamStr(mc, args.set)
-        elif args.get is not None:
-            getParamStr(mc, args.get)
+            setParamStr(mc, args.set, address=args.address, parameter_instance=args.instance)
+        if args.get is not None:
+
+            for get in args.get.split(','):
+                getParamStr(mc, get.strip(), address=args.address, parameter_instance=args.instance)
         else:
             # get object temperature
-            temp = mc.get_parameter(parameter_name="Object Temperature", address=address)
+            temp = mc.get_parameter(parameter_name="Object Temperature", address=address, parameter_instance=args.instance)
             print("query for object temperature, measured temperature {}C".format(temp))
 
             # is the loop stable?
-            stable_id = mc.get_parameter(parameter_name="Temperature is Stable", address=address)
+            stable_id = mc.get_parameter(parameter_name="Temperature is Stable", address=address, parameter_instance=args.instance)
             if stable_id == 0:
                 stable = "temperature regulation is not active"
             elif stable_id == 1:
@@ -1098,4 +1173,3 @@ if __name__ == "__main__":
             # mc.reset_device()
 
             print("leaving with-statement, connection will be closed")
-
